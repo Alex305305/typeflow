@@ -19,7 +19,7 @@ class StartScreen:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.selected_language = "ru"
-        self.selected_language = "beginner"
+        self.selected_level = "beginner"
         self.setup_ui()
 
     def setup_ui(self):
