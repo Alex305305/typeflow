@@ -1,7 +1,8 @@
 # core.py
 # Логика тренировки: выбор урока, подсчёт точности, WPM, экспорт
+
 import time
-import  csv
+import csv
 import os
 from datetime import datetime
 from lessons import get_lesson
@@ -9,94 +10,79 @@ from lessons import get_lesson
 # Файл для сохранения истории
 HISTORY_FILE = "typing_history.csv"
 
-class TypingSession:
-    """Класс, управляющий одной сессией тренировки.
-    Отвечает за:
-    - текущее слово/фразу,
-    - подсчёт точности и скорости,
-    - автоповтор сложных элементов,
-    - сохранение результатов.
-    """
 
-    def __init__(self,track: str,level_key: str):
-        """
-        :param track: "beginner" или "advanced"
-        :param level_key: например, "2_home_row"
-        """
+class TypingSession:
+    """Класс, управляющий одной сессией тренировки."""
+
+    def __init__(self, track: str, level_key: str, language: str):
         self.track = track
         self.level_key = level_key
-        # Получаем упражнения на текущем языке
-        self.exercises = get_lesson(track,level_key)[:]
+        self.language = language
+        try:
+            exercises = get_lesson(track, level_key, language)
+            if not exercises:
+                raise ValueError(f"Уровень {track}/{level_key} пуст")
+            self.exercises = exercises
+        except Exception as e:
+            print(f"[ОШИБКА] Не удалось загрузить урок: {e}")
+            self.exercises = ["ф", "ы", "в", "а"] if language == "ru" else ["f", "j", "d", "k"]
+
         self.index = 0
-        self.start_time = None
+        self.accuracy = []
+        self.speed_history = []
+        self.time_start = time.time()
+
+        # Для расчёта статистики
         self.total_correct_chars = 0
         self.total_words = 0
         self.total_accuracy = 0.0
+        self.repetition_count = {}  # счётчик повторов для каждого слова
 
-    def get_current_target(self)-> str:
-        """
-        Возвращает текущее упражнение (слово/фразу).
-        Если урок закончился — возвращает пустую строку.
-        """
+    def get_current_target(self) -> str:
         if self.index < len(self.exercises):
             return self.exercises[self.index]
         return ""
 
     def start_timer(self):
-        """
-        Запускает таймер при первом вводе.
-        Вызывается автоматически в submit().
-        """
-        if self.start_time is None:
-            self.start_time = time.time()
+        # Таймер уже запущен в __init__, но оставим для совместимости
+        pass
 
-    def get_elapsed_minutes(self)->float:
-        """
-        Возвращает время сессии в минутах
-        (минимум 0.001, чтобы избежать деления на 0).
-        """
-        if self.start_time is None:
-            return 0.0
-        return max(0.001,(time.time()-self.start_time)/60.0)
+    def get_elapsed_minutes(self) -> float:
+        elapsed = time.time() - self.time_start
+        return max(0.001, elapsed / 60.0)
 
-    def submit(self, user_input: str)->dict:
-        """
-        Обрабатывает введённый пользователем текст.
-        :param user_input: то, что напечатал пользователь
-        :return: словарь с результатами: точность, wpm,
-         нужно ли повторить и т.д.
-         """
-
-        self.start_timer()   # запускаем таймер при первом submit
-
+    def submit(self, user_input: str) -> dict:
         target = self.get_current_target()
         if not target:
-            return {"done": True}
+            return {"done": True, "accuracy": 100.0}
 
-        #  подсчитываем сколько символов введено верно
-        correct_chars = sum(
-            a == b for a, b in zip(user_input, target)
-        )
-        # Точность в процентах (округляем до 0,1%)
+        # Подсчёт точности
+        min_len = min(len(user_input), len(target))
+        correct_chars = sum(1 for i in range(min_len) if user_input[i] == target[i])
         accuracy = round(100 * correct_chars / max(len(target), 1), 1)
 
-        # Накапливаем статистику для WPM и итогового отчета
+        # Обновляем статистику
         self.total_correct_chars += correct_chars
         self.total_words += 1
         self.total_accuracy += accuracy
 
-        # Расчет WPM: (количество верных символов / 5) / время в мин
-        # (стандарт: одно слово = 5 символов)
-        wpm = round((self.total_correct_chars / 5) / self.get_elapsed_minutes(), 1)
-
-        # Автоповтор при <80% и слово не повторялось 3 раза
+        # Повтор при <80% (макс. 3 раза), но только если не последнее слово
         repeat_flag = False
-        if accuracy < 80.0 and self.exercises.count(target) < 3:
+        count = self.repetition_count.get(target, 0)
+        if accuracy >= 80.0:
+            self.repetition_count[target] = 0
+        elif count < 3 and self.index < len(self.exercises) - 1:
+            self.repetition_count[target] = count + 1
             self.exercises.append(target)
             repeat_flag = True
+        else:
+            self.repetition_count[target] = 0
 
-        # переход к следующему упражнению
         self.index += 1
+        done = self.index >= len(self.exercises)
+
+        # Расчёт WPM
+        wpm = round((self.total_correct_chars / 5) / self.get_elapsed_minutes(), 1)
 
         return {
             "target": target,
@@ -104,27 +90,23 @@ class TypingSession:
             "accuracy": accuracy,
             "wpm": wpm,
             "repeat": repeat_flag,
-            "done": self.index >= len(self.exercises)
+            "done": done
         }
 
     def get_final_stats(self) -> dict:
-        """
-        Возвращает итоговую статистику по окончанию урока
-        """
-        avg_accuracy = round(self.total_accuracy / self.total_words, 1) if self.total_words else 0.0
+        avg_accuracy = round(self.total_accuracy / self.total_words, 1) if self.total_words > 0 else 0.0
         final_wpm = round((self.total_correct_chars / 5) / self.get_elapsed_minutes(), 1)
+        time_sec = round(time.time() - self.time_start, 1)
         return {
             "words": self.total_words,
             "accuracy": avg_accuracy,
             "wpm": final_wpm,
-            "time_sec": round((time.time() - self.start_time), 1) if self.start_time else 0.0
+            "time_sec": time_sec
         }
 
+
 def save_session_to_csv(session: TypingSession):
-    """
-    Сохраняет результаты сессии в CSV-файл для последующего анализа.
-    Формат: дата, трек, уровень, wpm, точность, слов, секунд.
-    """
+    """Сохраняет результаты сессии в CSV-файл."""
     stats = session.get_final_stats()
     record = {
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -136,21 +118,9 @@ def save_session_to_csv(session: TypingSession):
         "time_sec": stats["time_sec"]
     }
 
-
-    # Проверяем, существует ли файл — если нет, создаём с заголовком
     file_exists = os.path.isfile(HISTORY_FILE)
-    with open(HISTORY_FILE, "a", newline = "", encoding = "utf-8") as f:
-        write = csv.DictWriter(f, fieldnames = record.keys())
+    with open(HISTORY_FILE, "a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=record.keys())
         if not file_exists:
-            write.writeheader()    # записываем заголовки: date,track,level,...
-        write.writerow(record)
-
-            #Теперь TypingSession принимает track и level_key, а не просто lesson_key.
-            #save_session_to_csv() — отдельная функция, её вызовем в gui.py.
-
-
-
-
-
-
-
+            writer.writeheader()
+        writer.writerow(record)

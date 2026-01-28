@@ -6,17 +6,20 @@
 LANGUAGE = "ru"
 
 # Цветовая схема — тёмная тема
-BG_COLOR = "#1e1e1e"   # фон окна
-FG_COLOR = "#e0e0e0"   # основной текст
-ACCENT_COLOR = "#4d79ff"    # акцент (кнопки)
-ERROR_COLOR = "#ff6b6b"   # ошибка
-CORRECT_COLOR = "#4caf50"   # верно
+BG_COLOR = "#392C23"      # Тёмная земля (фон)
+FG_COLOR = "#F0F0F0"      # Белый текст (чат)
+ACCENT_COLOR = "#5E8C31"  # Трава (акцент)
+ERROR_COLOR = "#F44336"   # Красный  (ошибка)
+CORRECT_COLOR = "#4CAF50" # Зелёный (верно)
+CURRENT_BG = "#607D8B"    # (серо-голубой) (текущий символ)
 
 # Шрифты
-FONT_FAMILY = "JetBrains Mono"   # моноширинный шрифт для чёткости
+USE_MINECRAFT_FONT = True
+FONT_FAMILY = "Press Start 2P" if USE_MINECRAFT_FONT else "Arial"   # моноширинный шрифт для чёткости
 FONT_SIZE_INPUT = 16   # размер шрифта в поле ввода
 FONT_SIZE_PROMPT = 18   # размер шрифта для слова-цели
 FONT_SIZE_LABER = 12    # размер мелкого текста (статистика)
+
 
 # Раскладка клавиш по пальцам — для подсказок и визуализации
 # Каждая строка — одна рука: левая (4 пальца), правая (4 пальца)
