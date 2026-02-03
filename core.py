@@ -66,22 +66,14 @@ class TypingSession:
         self.total_words += 1
         self.total_accuracy += accuracy
 
-        # Повтор при <80% (макс. 3 раза), но только если не последнее слово
+        # 🚫 Убираем динамическое добавление слов — фиксированный урок
+        # Повтор только если <80% и ещё не последнее слово
         repeat_flag = False
-        count = self.repetition_count.get(target, 0)
-        if accuracy >= 80.0:
-            self.repetition_count[target] = 0
-        elif count < 3 and self.index < len(self.exercises) - 1:
-            self.repetition_count[target] = count + 1
-            self.exercises.append(target)
+        if accuracy < 80.0 and self.index < len(self.exercises) - 1:
             repeat_flag = True
         else:
-            self.repetition_count[target] = 0
-
-        self.index += 1
+            self.index += 1  # только здесь увеличиваем index
         done = self.index >= len(self.exercises)
-
-        # Расчёт WPM
         wpm = round((self.total_correct_chars / 5) / self.get_elapsed_minutes(), 1)
 
         return {

@@ -9,6 +9,8 @@ from core import TypingSession, save_session_to_csv
 from PIL import Image, ImageTk
 import config
 from lessons import get_next_level, get_lesson
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
 class TypingGUI:
@@ -23,6 +25,9 @@ class TypingGUI:
         # Обязательно: создаём ВСЕ атрибуты ДО setup_ui() Фон сразу
         self.bg_canvas = tk.Canvas(self.root, highlightthickness=0)
         self.bg_canvas.place(x=0, y=0, relwidth=1, relheight=1)
+        # self.bg_canvas.configure(bg=BG_COLOR)
+        # Фон загрузится после отображения окна
+        self.root.after(300, self.init_background)
         self.status_label = tk.Label(
             self.root,
             text="",
@@ -34,12 +39,12 @@ class TypingGUI:
 
         self.setup_ui()
 
+        # Клик по окну снимает фокус с entry
+        self.root.bind("<Button-1>", self.on_window_click)
+
         self.entry.bind("<Return>", lambda e: self.submit_current()) # or self.root.bind("<Configure>", self.resize_background)
         self.chest_window = None
         self.create_chest_window()
-
-        # Запуск живой статистики
-        # self.root.after(100, self.update_live_stats)
 
     def play_sound(self, name: str):
         """Надёжное воспроизведение звука через paplay."""
@@ -260,18 +265,22 @@ class TypingGUI:
             self.chest_window.withdraw()
 
     def update_prompt(self):
+        # Защита от двойного вызова
+        if not hasattr(self, 'canvas') or not self.canvas.winfo_exists():
+            return
+        self.canvas.delete("all")  # fallback
+        self.canvas.delete(*self.canvas.find_all())  # принудительная очистка
         target = self.session.get_current_target()
         if not target:
             self.show_final_report()
             return
 
-        print(f"[DEBUG] Текущее упражнение: {target} (len={len(target)})") # ← ВЫВОД В КОНСОЛЬ
-        self.root.after(100, self.entry.focus_set)
+        print(f"[DEBUG] Текущее упражнение: {target} (len={len(target)})")
         self.current_word = target
         self.entry.delete(0, tk.END)
+        self.canvas.delete("all")  # ← дубль на всякий случай
         self.update_highlighting("")
-
-        self.entry.focus_set()
+        self.root.after(50, lambda: self.entry.focus_set()) # ВСЕГДА возвращаем фокус в поле ввода
 
         # CAPS LOCK
         caps_on = self.check_caps_lock()
@@ -319,24 +328,22 @@ class TypingGUI:
             self.status_label.config(text="")
 
     def update_highlighting(self, typed: str):
-        self.canvas.delete("all")
+        # Удаляем ВСЕ дочерние элементы canvas напрямую через tags
+        for item in self.canvas.find_all():
+            self.canvas.delete(item)
+
         target = self.current_word
         block_w, block_h = 24, 24
         x0_start = 20
-
-        # Обрезаем typed до длины target, чтобы избежать IndexError
         typed = typed[:len(target)]
 
         for i, char in enumerate(target):
             if i < len(typed):
-                if typed[i] == char:
-                    color = CORRECT_COLOR  # зелёный
-                else:
-                    color = ERROR_COLOR  # красный
+                color = CORRECT_COLOR if typed[i] == char else ERROR_COLOR
             elif i == len(typed):
-                color = CURRENT_BG  # текущая позиция (серый/тёмный)
+                color = CURRENT_BG
             else:
-                color = "#8B7D6B"  # не введено (древесина)
+                color = "#8B7D6B"
 
             x0 = x0_start + i * (block_w + 2)
             y0 = 10
@@ -415,19 +422,51 @@ class TypingGUI:
         # Сброс ввода и переход к следующему слову
         self.entry.delete(0, tk.END)
         self.root.after(300, self.update_prompt)
+        print(f"[DEBUG] index={self.session.index}, exercises_len={len(self.session.exercises)}, done={result.get('done')}")
 
     def load_next_level(self, event=None):
         # Удаляем сообщение
         if hasattr(self, 'message_label'):
             self.message_label.destroy()
+        # Убираем старую привязку
         self.root.unbind("<Return>")
-        self.root.bind("<Return>", self.submit_current)
         self.update_prompt()
 
     def resize_background(self, event=None):
-        # Временно отключено для стабильности
-        self.bg_canvas.configure(bg=BG_COLOR)
-        return
+        # Не обрабатываем, если окно ещё не видимо
+        if not self.root.winfo_viewable():
+            return
+
+        w = self.root.winfo_width()
+        h = self.root.winfo_height()
+        if w <= 1 or h <= 1:  # минимальный размер для фона
+            return
+
+        bg_name = "history" if hasattr(self, 'message_label') and self.message_label.winfo_viewable() else "training"
+        bg_path = os.path.join(PROJECT_ROOT, "textures", "background", f"{bg_name}.png")
+
+        try:
+            if not os.path.isfile(bg_path):
+                print(f"[ФОН] Файл не найден: {bg_path}")
+                self.bg_canvas.configure(bg=BG_COLOR)
+                return
+
+            # Загружаем изображение
+            img = Image.open(bg_path).resize((w, h), Image.NEAREST)
+            # Масштабируем ТОЛЬКО если размеры корректны
+            if w > 0 and h > 0:
+                img = img.resize((w, h), Image.NEAREST)
+
+            # Сохраняем ссылку в атрибуте — критично!чтобы GC не удалил
+            self.bg_photo = ImageTk.PhotoImage(img)
+
+            # Удаляем старое изображение
+            self.bg_canvas.delete("all")
+            self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_photo)
+
+        except Exception as e:
+            print(f"[ФОН] Ошибка: {e}")
+            self.bg_canvas.configure(bg=BG_COLOR)
 
     def check_caps_lock(self):
         try:
@@ -435,6 +474,67 @@ class TypingGUI:
             return 'Caps Lock:   on' in out
         except:
             return False
+
+    def load_background(self):
+        """Загружает фон ПОСЛЕ того, как окно отобразилось."""
+        if not self.root.winfo_exists():
+            return
+
+        bg_name = "training"
+        bg_path = os.path.join("textures", "background", f"{bg_name}.png")
+
+        try:
+            if os.path.isfile(bg_path):
+                img = Image.open(bg_path)
+                w, h = self.root.winfo_width(), self.root.winfo_height()
+                if w <= 1 or h <= 1:
+                    # Если размеры ещё не готовы — подождём
+                    # self.root.after(100, self.load_background)  #Удали всё, что связано с on_window_resize, draw_background_resized, after(100, ...) — они только мешают.
+                    return
+                img = img.resize((w, h), Image.NEAREST)
+                # КРИТИЧНО: сохраняем ссылку, чтобы GC не удалил
+                self.bg_photo = ImageTk.PhotoImage(img)
+                self.bg_canvas.delete("all")
+                self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_photo)
+            else:
+                self.bg_canvas.configure(bg=BG_COLOR)
+        except Exception as e:
+            print(f"[ФОН] Ошибка загрузки {bg_path}: {e}")
+            self.bg_canvas.configure(bg=BG_COLOR)
+
+    def init_background(self):
+        """Инициализирует фон один раз, когда окно готово."""
+        if not self.root.winfo_exists():
+            return
+
+        bg_path = os.path.join("textures", "background", "training.png")
+        try:
+            if os.path.isfile(bg_path):
+                img = Image.open(bg_path)
+                w, h = self.root.winfo_width(), self.root.winfo_height()
+                if w < 100 or h < 100:
+                    # Если размеры ещё не готовы — подождём
+                    self.root.after(200, self.init_background)
+                    return
+
+                img = img.resize((w, h), Image.NEAREST)
+                # 🔑 КЛЮЧЕВОЙ ШАГ: сохраняем ссылку в атрибуте класса
+                self.bg_photo = ImageTk.PhotoImage(img)  # ← Это must be kept!
+
+                self.bg_canvas.delete("all")
+                self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_photo)
+            else:
+                self.bg_canvas.configure(bg=BG_COLOR)
+        except Exception as e:
+            print(f"[ФОН] Ошибка: {e}")
+            self.bg_canvas.configure(bg=BG_COLOR)
+
+    def on_window_click(self, event):
+        """Снимает фокус с entry при клике по окну (не по entry)."""
+        # Если клик не по entry — снимаем фокус
+        if event.widget != self.entry:
+            self.root.focus_set()  # переносим фокус на root
+
 
     # def update_live_stats(self):
     #     if not hasattr(self, 'root') or not self.root.winfo_exists():

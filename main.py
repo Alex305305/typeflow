@@ -123,18 +123,18 @@ class StartScreen:
                             btn.config(bg=ACCENT_COLOR if lang == "en" else "#5a5a5a")
 
     def start_training(self):
-        self.root.withdraw()  # ← СКРЫВАЕМ, НЕ УНИЧТОЖАЕМ!
+        # 1. Уничтожаем старое окно (а не withdraw!)
+        self.root.destroy()
 
+        # 2. Создаём новое окно — без fullscreen, с фиксированным размером
         new_root = tk.Tk()
-        new_root.geometry(self.root.geometry())
-        new_root.attributes("-fullscreen", self.root.attributes("-fullscreen"))
+        new_root.title("Тренажер слепой печати")
+        new_root.geometry("800x600")  # ← фиксированный размер
+        new_root.resizable(True, True)  # ← разрешаем изменение размера
 
+        # 3. Запускаем GUI
         track = self.track_var.get()
-        if track == "beginner":
-            level_key = "1_fingers"
-        else:
-            level_key = "1_drills"
-
+        level_key = "1_fingers" if track == "beginner" else "1_drills"
         app = TypingGUI(new_root, track, level_key, self.selected_language)
         new_root.mainloop()
 
