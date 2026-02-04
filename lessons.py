@@ -1,134 +1,174 @@
 # lessons.py
-# Уроки для тренажёра слепой печати — вдохновлено RapidTyping
+# Уроки для тренажёра слепой печати — совместимо с GUI (строки с пробелами)
 # Поддержка: ru / en
 # Структура: beginner (10 уровней) + advanced (5 уровней)
 
 LESSONS = {
     "beginner": {
-        # Уровень 1: Позиция пальцев (F и J — базовые)
+        # Уровень 1: базовые клавиши F и J
         "1_fingers": [
-            "f f f f f f ",
-            "j j j j j j ",
-            "f j f j ",
-            "j f j f ",
-            "f f j j ",
-            "j j f f ",
-            "f j j f ",
-            "j f f j "
+            "f f f f f f",
+            "j j j j j j",
+            "f j f j f j",
+            "j f j f j f",
+            "f f j j f f",
+            "j j f f j j",
+            "f j j f f j",
+            "j f f j j f"
         ],
-        # Уровень 2: Домашний ряд (ASDF / JKL;)
+
+        # Уровень 2: домашний ряд (ASDF / JKL;)
         "2_home_row": [
-            "a s d f ; ",
-            "f d s a ",
-            "a s d f f ",
-            "; l k j j k ",
-            "a ; s l d k ",
-            "f j d k s",
-            "asdf ;lkj asdf ;lkj",
-            "fdsa jkl; fdsa jkl;"
+            "a s d f ; l k j",
+            "f d s a j k l ;",
+            "a s d f f j k l",
+            "; l k j a s d f",
+            "a ; s l d k f j",
+            "f j d k s a ; l",
+            "asdf ;lkj asdf",
+            "fdsa jkl; fdsa"
         ],
-        # Уровень 3: Верхний левый ряд (QWERT)
+
+        # Уровень 3: верхний левый ряд (QWERT)
         "3_top_left": [
-            "q w e r t",
-            "t r e w q",
-            "q t w r e",
-            "e r w t q",
-            "qw qw qw qw",
-            "er er er er",
-            "ty ty ty ty",
-            "qwerty qwerty"
+            "q w e r t y u i o p",
+            "q t w r e y u i o p",
+            "qw er ty ui op qw",
+            "er qw ty ui op er",
+            "q w e r t q w e r t",
+            "t r e w q t r e w q",
+            "qwerty uiop asdf",
+            "qwe rty uio p asd"
         ],
-        # Уровень 4: Верхний правый ряд (YUIOP)
+
+        # Уровень 4: правый верхний ряд (YUIOP)
         "4_top_right": [
             "y u i o p",
             "p o i u y",
-            "y p u o i",
-            "i o u p y",
-            "ui ui ui ui",
-            "op op op op",
-            "yu yu yu yu",
-            "uiop uiop uiop"
+            "y u i o p y u i o p",
+            "u i o p y u i o p y",
+            "yui op yui op",
+            "poy ui yop iu",
+            "y u i o p ; l k j",
+            "p o i u y f d s a"
         ],
-        # Уровень 5: Нижний левый ряд (ZXCVB)
-        "5_bottom_left": [
-            "z x c v b",
-            "b v c x z",
-            "z b x v c",
-            "c v x b z",
-            "zx zx zx zx",
-            "cv cv cv cv",
-            "vb vb vb vb",
-            "zxcvb zxcvb"
+
+        # Уровень 5: нижний ряд (ZXCVBNM)
+        "5_bottom_row": [
+            "z x c v b n m",
+            "m n b v c x z",
+            "z x c v b n m z x",
+            "b v c x z m n",
+            "zx cv bn mz",
+            "cv zx nb mv",
+            "zxc vbn m , . /",
+            "z x c v b n m , . /"
         ],
-        # Уровень 6: Нижний правый ряд (NM,./)
-        "6_bottom_right": [
-            "n m , . /",
-            "/ . , m n",
-            "n / m . ,",
-            ", . m / n",
-            "nm nm nm nm",
-            ",. ,. ,. ,.",
-            "./ ./ ./ ./",
-            "nm,. / nm,. /"
+
+        # Уровень 6: цифры и символы
+        "6_symbols": [
+            "1 2 3 4 5 6 7 8 9 0",
+            "! @ # $ % ^ & * ( )",
+            "1 ! 2 @ 3 # 4 $ 5 %",
+            "q w e r t 1 2 3 4 5",
+            "` ~ - _ = + [ ] { }",
+            "| \\ : ; \" ' < > , . ? /",
+            "123 456 7890 !@#$",
+            "qwerty 12345 asdfg"
         ],
-        # Уровень 7: Частые биграммы (en/ru)
-        "7_bigrams": [
-            "th he in er an re nd at on es",
-            "то но на ре ен ни то он ес"
+
+        # Уровень 7–10: комбинации
+        "7_combos_1": [
+            "f j a s d k l ;",
+            "q w e r t y u i",
+            "z x c v b n m , .",
+            "1 2 3 4 5 6 7 8 9",
+            "the and for are but",
+            "linux ubuntu debian",
+            "vim nano emacs git",
+            "ssh scp rsync grep"
         ],
-        # Уровень 8: Короткие слова
-        "8_words": [
-            "cat dog and the run play type fast",
-            "кот соб и что бег игр печ быс"
+        "8_combos_2": [
+            "ls -la /home",
+            "cd .. && pwd",
+            "cat /etc/os-release",
+            "sudo apt update",
+            "git init && git add .",
+            "docker run -d nginx",
+            "kubectl get pods",
+            "helm install nginx"
         ],
-        # Уровень 9: Короткие фразы
-        "9_short_sentences": [
-            "The cat runs fast.",
-            "Play and type well.",
-            "Кот бежит быстро.",
-            "Играй и печатай хорошо."
+        "9_combos_3": [
+            "The quick brown fox",
+            "Pack my box with five",
+            "How vexingly quick daft zebras jump!",
+            "Sphinx of black quartz, judge my vow.",
+            "Cwm fjord bank glyphs vext quiz.",
+            "Cozy lummox gives smart squid who asks for job",
+            "Grumpy wizards make toxic brew for the evil queen",
+            "Blame the blue sky for the bright light"
         ],
-        # Уровень 10: Полные предложения
-        "10_sentences": [
-            "The quick brown fox jumps over the lazy dog.",
-            "Practice makes perfect every single day.",
-            "В чащах юга жил был цитрус? Да, но фальшивый экземпляр!",
-            "Практика делает мастера каждый день."
+        "10_full_speed": [
+            "f j a s d f j k l ; q w e r t y u i o p z x c v b n m",
+            "1 2 3 4 5 6 7 8 9 0 ! @ # $ % ^ & * ( ) - _ = +",
+            "ls -l | grep \".py\" && python main.py",
+            "git commit -am \"fix: typo in config\"",
+            "docker-compose up --build",
+            "kubectl apply -f deployment.yaml",
+            "ansible-playbook site.yml -i inventory",
+            "curl -X GET https://api.example.com/v1/data"
         ]
     },
     "advanced": {
-        # Уровень 1: Комбинированные дриллы
-        "1_drills": [
-            "asdf jkl; qwer uiop zxcv bnm,",
-            "фывапр олдж йцук енгш ячсм ить,",
-            "qaz wsx edc rfv tgb yhn ujm ik, ol. p;/",
-            "йфя чсу вам икр тго шлб щдю зжэ хъь"
+        "1_bash_basic": [
+            "echo $PATH",
+            "export PS1='\\u@\\h:\\w$ '",
+            "history | grep ssh",
+            "find /var/log -name *.log -mtime -7",
+            "tar -czf backup.tar.gz /home/user",
+            "rsync -avz /src/ user@host:/dst/",
+            "chmod 755 script.sh",
+            "chown user:group file"
         ],
-        # Уровень 2: Сложные слова
-        "2_speed": [
-            "because through should could would",
-            "government beautiful experience",
-            "потому через должен мог бы хотел",
-            "правительство красивый опыт"
+        "2_git_dev": [
+            "git status -s",
+            "git diff --cached",
+            "git reset HEAD~1",
+            "git rebase -i HEAD~3",
+            "git cherry-pick abc1234",
+            "git bisect start && git bisect bad && git bisect good 123",
+            "git submodule update --init",
+            "git worktree add ../feature-branch feature"
         ],
-        # Уровень 3: Технические термины
-        "3_technical": [
-            "python javascript keyboard accuracy",
-            "blind typing programming development",
-            "питон яваскрипт клавиатура точность",
-            "слепая печать программирование разработка"
+        "3_docker_k8s": [
+            "docker build -t app:latest .",
+            "docker run --rm -it -v $(pwd):/src python:3.12 bash",
+            "kubectl get nodes -o wide",
+            "kubectl describe pod my-pod",
+            "helm repo add bitnami https://charts.bitnami.com/bitnami",
+            "kind create cluster --name dev",
+            "istioctl install --set profile=demo",
+            "flux create source git my-repo --url=https://github.com/user/repo"
         ],
-        # Уровень 4: Цитаты
-        "4_quotes": [
-            "To be or not to be, that is the question.",
-            "All animals are equal, but some animals are more equal than others.",
-            "Быть или не быть — вот в чём вопрос.",
-            "Все животные равны, но некоторые равнее других."
+        "4_yaml_json": [
+            "apiVersion: v1\nkind: Pod\nmetadata:\n  name: nginx",
+            "spec:\n  containers:\n  - name: nginx\n    image: nginx:1.25",
+            '{"name":"nginx","replicas":3,"port":80}',
+            '{"env":"prod","config":{"debug":false}}',
+            "server {\n  listen 80;\n  location / { proxy_pass http://app; } }",
+            "upstream backend { server 127.0.0.1:8080; }",
+            "- name: install-deps\n  apt:\n    pkg: python3-pip",
+            "labels:\n  app.kubernetes.io/name: nginx"
         ],
-        # Уровень 5: Свободный набор (текст)
-        "5_free_typing": [
-            "The only way to do great work is to love what you do. — Steve Jobs",
-            "Слепая печать — навык, который экономит тысячи часов в жизни. — Alex305305"
+        "5_prose_en_ru": [
+            "The five boxing wizards jump quickly.",
+            "Pack my box with five dozen liquor jugs.",
+            "Съешь ещё этих мягких французских булок, да выпей чаю.",
+            "Размножение бактерий происходит путём деления клетки.",
+            "DevOps — это культура и практика автоматизации ИТ-процессов.",
+            "Kubernetes управляет контейнеризированными приложениями в кластерах.",
+            "Git — распределённая система контроля версий.",
+            "Linux — свободная операционная система с открытым исходным кодом."
         ]
     }
 }
@@ -155,93 +195,113 @@ def get_lesson(track: str, level_key: str, language: str = "ru") -> list:
     exercises_en = LESSONS.get(track, {}).get(level_key, [])
 
     if language == "ru":
-        # Словарь перевода: англ → рус (сохранение структуры пробелов!)
         trans_map = {
-            # Beginner
-            "f f f f f f f f": "а а а а а а а а",
-            "j j j j j j j j": "о о о о о о о о",
-            "f j f j f j f j": "а о а о а о а о",
-            "j f j f j f j f": "о а о а о а о а",
-            "f f j j f f j j": "а а о о а а о о",
-            "j j f f j j f f": "о о а а о о а а",
-            "f j j f f j j f": "а о о а а о о а",
-            "j f f j j f f j": "о а а о о а а о",
+            # === Level 1 ===
+            "f f f f f f": "а а а а а а",
+            "j j j j j j": "о о о о о о",
+            "f j f j f j": "а о а о а о",
+            "j f j f j f": "о а о а о а",
+            "f f j j f f": "а а о о а а",
+            "j j f f j j": "о о а а о о",
+            "f j j f f j": "а о о а а о",
+            "j f f j j f": "о а а о о а",
 
+            # === Level 2 ===
             "a s d f ; l k j": "ф ы в а ж э л д",
             "f d s a j k l ;": "а в ы ф о к л ж",
-            "a s d f f d s a": "ф ы в а а в ы ф",
-            "; l k j j k l ;": "ж л к о о к л ж",
+            "a s d f f j k l": "ф ы в а а о к л",
+            "; l k j a s d f": "ж л к о ф ы в а",
             "a ; s l d k f j": "ф ж ы л в к а о",
-            "f j d k s l a ;": "а о в к ы л ф ж",
-            "asdf ;lkj asdf ;lkj": "фывап жлко фывап жлко",
-            "fdsa jkl; fdsa jkl;": "авыф оклж авыф оклж",
+            "f j d k s a ; l": "а о в к ы ф ж л",
+            "asdf ;lkj asdf": "фывап жлко фывап",
+            "fdsa jkl; fdsa": "авыф оклж авыф",
 
-            "q w e r t": "й ц у к е",
-            "t r e w q": "е к у ц й",
-            "q t w r e": "й е ц к у",
-            "e r w t q": "у к ц е й",
-            "qw qw qw qw": "йц йц йц йц",
-            "er er er er": "ук ук ук ук",
-            "ty ty ty ty": "ен ен ен ен",
-            "qwerty qwerty": "йцукен йцукен",
+            # === Level 3 ===
+            "q w e r t y u i o p": "й ц у к е н г ш щ з",
+            "q t w r e y u i o p": "й е ц к у н г ш щ з",
+            "qw er ty ui op qw": "йц ук ен гш щз йц",
+            "er qw ty ui op er": "ук йц ен гш щз ук",
+            "q w e r t q w e r t": "й ц у к е й ц у к е",
+            "t r e w q t r e w q": "е к у ц й е к у ц й",
+            "qwerty uiop asdf": "йцукен гшщз фыва",
+            "qwe rty uio p asd": "йцу кен гшщ з фыв",
 
+            # === Level 4 ===
             "y u i o p": "н г ш щ з",
             "p o i u y": "з щ ш г н",
-            "y p u o i": "н з г щ ш",
-            "i o u p y": "ш щ г з н",
-            "ui ui ui ui": "шг шг шг шг",
-            "op op op op": "щз щз щз щз",
-            "yu yu yu yu": "нг нг нг нг",
-            "uiop uiop uiop": "гшщз гшщз гшщз",
+            "y u i o p y u i o p": "н г ш щ з н г ш щ з",
+            "u i o p y u i o p y": "г ш щ з н г ш щ з н",
+            "yui op yui op": "нгш щз нгш щз",
+            "poy ui yop iu": "зон гш ноз шг",
+            "y u i o p ; l k j": "н г ш щ з ж э л д",
+            "p o i u y f d s a": "з щ ш г н а в ы ф",
 
-            "z x c v b": "я ч с м и",
-            "b v c x z": "и м с ч я",
-            "z b x v c": "я и ч м с",
-            "c v x b z": "с м ч и я",
-            "zx zx zx zx": "яч яч яч яч",
-            "cv cv cv cv": "см см см см",
-            "vb vb vb vb": "ми ми ми ми",
-            "zxcvb zxcvb": "ячсми ячсми",
+            # === Level 5 ===
+            "z x c v b n m": "я ч с м и т ь",
+            "m n b v c x z": "ь т и м с ч я",
+            "z x c v b n m z x": "я ч с м и т ь я ч",
+            "b v c x z m n": "и м с ч я ь т",
+            "zx cv bn mz": "яч см ит мь",
+            "cv zx nb mv": "см яч ти мв",
+            "zxc vbn m , . /": "ячс мит ь , . ю",
+            "z x c v b n m , . /": "я ч с м и т ь , . ю",
 
-            "n m , . /": "т ь , . ю",
-            "/ . , m n": "ю . , ь т",
-            "n / m . ,": "т ю ь . ,",
-            ", . m / n": ", . ь ю т",
-            "nm nm nm nm": "ть ть ть ть",
-            ",. ,. ,. ,.": ",. ,. ,. ,.",
-            "./ ./ ./ ./": ".ю .ю .ю .ю",
-            "nm,. / nm,. /": "ть,. ю ть,. ю",
+            # === Level 6 ===
+            "1 2 3 4 5 6 7 8 9 0": "1 2 3 4 5 6 7 8 9 0",
+            "! @ # $ % ^ & * ( )": "! @ # $ % ^ & * ( )",
+            "1 ! 2 @ 3 # 4 $ 5 %": "1 ! 2 @ 3 # 4 $ 5 %",
+            "q w e r t 1 2 3 4 5": "й ц у к е 1 2 3 4 5",
+            "` ~ - _ = + [ ] { }": "` ~ - _ = + [ ] { }",
+            "| \\ : ; \" ' < > , . ? /": "| \\ : ; \" ' < > , . ? /",
+            "123 456 7890 !@#$": "123 456 7890 !@#$",
+            "qwerty 12345 asdfg": "йцукен 12345 фывапр",
 
-            # Bigrams
-            "th he in er an re nd at on es": "то но на ре ен ни то он ес",
-            # Words
-            "cat dog and the run play type fast": "кот соб и что бег игр печ быс",
-            # Sentences
-            "The cat runs fast.": "Кот бежит быстро.",
-            "Play and type well.": "Играй и печатай хорошо.",
-            "The quick brown fox jumps over the lazy dog.": "В чащах юга жил был цитрус? Да, но фальшивый экземпляр!",
-            "Practice makes perfect every single day.": "Практика делает мастера каждый день.",
+            # === Level 7 ===
+            "f j a s d k l ;": "а о ф ы в к л ж",
+            "q w e r t y u i": "й ц у к е н г ш",
+            "z x c v b n m , .": "я ч с м и т ь , .",
+            "1 2 3 4 5 6 7 8 9": "1 2 3 4 5 6 7 8 9",
+            "the and for are but": "что и для но но",
+            "linux ubuntu debian": "линукс убунту дебиан",
+            "vim nano emacs git": "вим нано эмакс гит",
+            "ssh scp rsync grep": "ссш скп рсинк греп",
 
-            # Advanced
-            "asdf jkl; qwer uiop zxcv bnm,": "фывапр олдж йцук енгш ячсм ить,",
-            "qaz wsx edc rfv tgb yhn ujm ik, ol. p;/": "йфя чсу вам икр тго шлб щдю зжэ хъь",
-            "because through should could would": "потому через должен мог бы хотел",
-            "government beautiful experience": "правительство красивый опыт",
-            "python javascript keyboard accuracy": "питон яваскрипт клавиатура точность",
-            "blind typing programming development": "слепая печать программирование разработка",
-            "To be or not to be, that is the question.": "Быть или не быть — вот в чём вопрос.",
-            "All animals are equal, but some animals are more equal than others.": "Все животные равны, но некоторые равнее других.",
-            "The only way to do great work is to love what you do. — Steve Jobs": "Слепая печать — навык, который экономит тысячи часов в жизни. — Alex305305"
+            # === Level 8 ===
+            "ls -la /home": "лс -ла /хоум",
+            "cd .. && pwd": "цд .. && пвд",
+            "cat /etc/os-release": "кат /етц/ос-релиз",
+            "sudo apt update": "судо апт апдейт",
+            "git init && git add .": "гит инит && гит адд .",
+            "docker run -d nginx": "докер ран -д нгинкс",
+            "kubectl get pods": "кабectl гет подс",
+            "helm install nginx": "хелм инсталл нгинкс",
+
+            # === Level 9–10 ===
+            "The quick brown fox": "Быстрый коричневый лис",
+            "Pack my box with five": "Упакуй мой ящик пятью",
+            "How vexingly quick daft zebras jump!": "Как раздражающе быстро глупые зебры прыгают!",
+            "Sphinx of black quartz, judge my vow.": "Сфинкс из чёрного кварца, оцени мою клятву.",
+            "Cwm fjord bank glyphs vext quiz.": "Кум фьорд банк глифс векст квиз.",
+            "Cozy lummox gives smart squid who asks for job": "Уютный неуклюжий тип даёт умному спруту, который просит работу",
+            "Grumpy wizards make toxic brew for the evil queen": "Ворчливые волшебники варят ядовитое зелье для злой королевы",
+            "Blame the blue sky for the bright light": "Вини голубое небо за яркий свет",
+
+            "f j a s d f j k l ; q w e r t y u i o p z x c v b n m": "а о ф ы в а о к л ж й ц у к е н г ш щ з я ч с м и т ь",
+            "1 2 3 4 5 6 7 8 9 0 ! @ # $ % ^ & * ( ) - _ = +": "1 2 3 4 5 6 7 8 9 0 ! @ # $ % ^ & * ( ) - _ = +",
+            "ls -l | grep \".py\" && python main.py": "лс -л | греп \".пу\" && питон майн.пу",
+            "git commit -am \"fix: typo in config\"": "гит коммит -ам \"фикс: опечатка в конфиге\"",
+            "docker-compose up --build": "докер-композ ап --билд",
+            "kubectl apply -f deployment.yaml": "кабectl апплай -ф деплоймент.ямл",
+            "ansible-playbook site.yml -i inventory": "ансIBLE-плейбук сайт.ямл -и инвентори",
+            "curl -X GET https://api.example.com/v1/data": "карл -Х ГЕТ хттпс://апи.екзампле.ком/в1/дата"
         }
 
-        # Применяем перевод
         translated = []
         for ex in exercises_en:
-            # Ищем точное совпадение
             if ex in trans_map:
                 translated.append(trans_map[ex])
             else:
-                # Если нет — оставляем как есть (например, цифры, спецсимволы)
+                # Не переводим команды, JSON, YAML, спецсимволы
                 translated.append(ex)
         return translated
 
