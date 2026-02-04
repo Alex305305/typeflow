@@ -23,9 +23,18 @@ class TypingGUI:
         self.diamonds = 0
 
         # Обязательно: создаём ВСЕ атрибуты ДО setup_ui() Фон сразу
+        # Создаём холст для фона
         self.bg_canvas = tk.Canvas(self.root, highlightthickness=0)
         self.bg_canvas.place(x=0, y=0, relwidth=1, relheight=1)
-        # self.bg_canvas.configure(bg=BG_COLOR)
+
+        # Список для хранения ссылок на изображения (защита от GC)
+        self._bg_photos = None
+        # ID текущего изображения на холсте
+        self.bg_image_id = None
+
+        # Привязываем событие изменения размера
+        self.root.bind("<Configure>", self.on_resize)
+
         # Фон загрузится после отображения окна
         self.root.after(300, self.init_background)
         self.status_label = tk.Label(
@@ -535,6 +544,32 @@ class TypingGUI:
         if event.widget != self.entry:
             self.root.focus_set()  # переносим фокус на root
 
+    def on_resize(self, event):
+        w, h = event.width, event.height
+        if w < 100 or h < 100:
+            return
+
+        bg_path = os.path.join(os.path.dirname(__file__), "textures", "background", "training.png")
+        if not os.path.isfile(bg_path):
+            return
+
+        try:
+            img = Image.open(bg_path)
+            # Ключ: масштабируем ТОЛЬКО если размер изображения ≠ размер окна
+            if img.size != (w, h):
+                img = img.resize((w, h), Image.NEAREST)
+            photo = ImageTk.PhotoImage(img)
+
+            # Удаляем старое
+            if self.bg_image_id:
+                self.bg_canvas.delete(self.bg_image_id)
+
+            # Создаём новое
+            self.bg_image_id = self.bg_canvas.create_image(0, 0, anchor="nw", image=photo)
+            self._bg_photo = photo  # ← сохраняем ссылку
+
+        except Exception as e:
+            print(f"[ФОН] Ошибка: {e}")
 
     # def update_live_stats(self):
     #     if not hasattr(self, 'root') or not self.root.winfo_exists():
