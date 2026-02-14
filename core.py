@@ -25,7 +25,7 @@ class TypingSession:
             self.exercises = exercises
         except Exception as e:
             print(f"[ОШИБКА] Не удалось загрузить урок: {e}")
-            self.exercises = ["ф", "ы", "в", "а"] if language == "ru" else ["f", "j", "d", "k"]
+
 
         self.index = 0
         self.accuracy = []

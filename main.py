@@ -5,6 +5,7 @@ from tkinter import font as tkfont
 from config import BG_COLOR, FG_COLOR, ACCENT_COLOR, set_language
 from gui import TypingGUI
 from PIL import Image, ImageTk
+from lessons import get_lesson, get_next_level
 
 
 class StartScreen:
@@ -130,7 +131,7 @@ class StartScreen:
 
         # Запускаем тренажёр в ТОМ ЖЕ окне
         track = self.track_var.get()
-        level_key = "1_fingers" if track == "beginner" else "1_drills"
+        level_key = "1_base_position" if track == "beginner" else "1_bash_scripts"
         self.typing_app = TypingGUI(self.root, track, level_key, self.selected_language)
 
 

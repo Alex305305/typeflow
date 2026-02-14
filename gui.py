@@ -286,7 +286,7 @@ class TypingGUI:
 
         print(f"[DEBUG] Текущее упражнение: {target} (len={len(target)})")
         self.current_word = target
-        self.entry.delete(0, tk.END)
+        # self.entry.delete(0, tk.END)
         self.canvas.delete("all")  # ← дубль на всякий случай
         self.update_highlighting("")
         self.root.after(50, lambda: self.entry.focus_set()) # ВСЕГДА возвращаем фокус в поле ввода
@@ -335,6 +335,8 @@ class TypingGUI:
             self.status_label.config(text="⚠️ CAPS LOCK ВКЛ", fg="red", bg="yellow")
         else:
             self.status_label.config(text="")
+
+        self.entry.xview('moveto', 0.5)  # ← КУРСОР ВСЕГДА В ЦЕНТРЕ
 
     def update_highlighting(self, typed: str):
         # Удаляем ВСЕ дочерние элементы canvas напрямую через tags
@@ -437,9 +439,19 @@ class TypingGUI:
         # Удаляем сообщение
         if hasattr(self, 'message_label'):
             self.message_label.destroy()
-        # Убираем старую привязку
-        self.root.unbind("<Return>")
-        self.update_prompt()
+
+        # Получаем СЛЕДУЮЩИЙ уровень через функцию из lessons.py
+        next_level_key = get_next_level(self.session.track, self.session.level_key)
+
+        if next_level_key:
+            # Создаём НОВУЮ сессию для следующего уровня
+            self.session = TypingSession(self.session.track, next_level_key, self.session.language)
+            self.current_exercise_index = 0
+            self.update_prompt()
+            self.root.unbind("<Return>")  # Убираем привязку
+        else:
+            # Конец трека — показываем сообщение
+            self.show_completion_message()
 
     def resize_background(self, event=None):
         # Не обрабатываем, если окно ещё не видимо
