@@ -46,12 +46,15 @@ class TypingGUI:
         )
         self.status_label.pack(side="bottom", pady=2)
 
+        self.current_index = 0
+        self.user_input = ""
+        self.is_training_ended = False
+
         self.setup_ui()
 
         # Клик по окну снимает фокус с entry
         self.root.bind("<Button-1>", self.on_window_click)
 
-        self.entry.bind("<Return>", lambda e: self.submit_current()) # or self.root.bind("<Configure>", self.resize_background)
         self.chest_window = None
         self.create_chest_window()
 
@@ -103,7 +106,8 @@ class TypingGUI:
         self.root.configure(bg=BG_COLOR)
         self.root.bind("<Escape>", lambda _: self.root.quit())
 
-        # Canvas для слова
+
+        # Поле ввода
         self.canvas = tk.Canvas(
             self.root,
             bg=BG_COLOR,
@@ -111,21 +115,12 @@ class TypingGUI:
             highlightthickness=0
         )
         self.canvas.pack(pady=20, padx=40, fill="x")
+        self.canvas.focus_set()  # Фокус на Canvas
 
-        # Поле ввода
-        self.entry = tk.Entry(
-            self.root,
-            font=("Press Start 2P", 16),
-            bg="#2d2d2d",
-            fg="#F0F0F0",
-            insertbackground="#F0F0F0",
-            relief="flat",
-            justify="center",
-            highlightthickness=0
-        )
-        self.entry.pack(pady=10, ipady=10, padx=40, fill="x")
-        self.root.after(300, self.entry.focus_set)
-        self.entry.bind("<KeyRelease>", self.on_key_release)
+        # Привязываем нажатия клавиш
+        self.root.bind("<Key>", self.on_key_press)
+        self.root.bind("<BackSpace>", self.on_backspace)
+
 
         # Статистика
         self.stats_var = tk.StringVar(value="Точность: — | WPM: —")
@@ -140,17 +135,17 @@ class TypingGUI:
         )
         self.stats_label.pack(pady=20, padx=40, fill="x")
         # Алмазы — ТОЛЬКО ОДИН РАЗ!
-        self.diamond_label = tk.Label(
+        self.diamonds_label = tk.Label(
             self.root,
             text="Алмазов: 0",
             font=("Press Start 2P", 12),
             bg=BG_COLOR,
             fg="#4CC9F0"
         )
-        self.diamond_label.place(relx=0.98, rely=0.02, anchor="ne")
+        self.diamonds_label.place(relx=0.98, rely=0.02, anchor="ne")
 
-        # Enter — отправка
-        self.entry.bind("<Return>", lambda e: self.on_enter())
+        self.root.bind("<Return>", lambda e: self.submit_current())
+
 
         # Первое слово
         self.update_prompt()
@@ -159,11 +154,9 @@ class TypingGUI:
 
 
     def on_enter(self):
-        # Принудительно обновляем StringVar перед чтением
-        self.root.update_idletasks()  # ← КЛЮЧЕВО: синхронизируем GUI
-        user_input = self.entry.get().strip()
-        print(f"[DEBUG] on_enter: user_input = '{user_input}'")
-        if user_input:
+        # ЗАМЕНИТЕ НА:
+        print(f"[DEBUG] on_enter: user_input = '{self.user_input}'")
+        if self.user_input:
             self.submit_current()
         else:
             print("[DEBUG] on_enter: input пустой — игнорируем")
@@ -285,11 +278,21 @@ class TypingGUI:
             return
 
         print(f"[DEBUG] Текущее упражнение: {target} (len={len(target)})")
+
         self.current_word = target
-        # self.entry.delete(0, tk.END)
-        self.canvas.delete("all")  # ← дубль на всякий случай
-        self.update_highlighting("")
-        self.root.after(50, lambda: self.entry.focus_set()) # ВСЕГДА возвращаем фокус в поле ввода
+
+        # Сброс атрибутов (ТОЛЬКО ОДИН РАЗ!)
+        self.current_index = 0
+        self.user_input = ""  # ← СТРОКА, НЕ StringVar! УДАЛИТЕ .set()
+        self.is_training_ended = False
+
+        # Обновляем scrollregion
+        total_width = len(self.current_word) * 26 + 40
+        self.canvas.config(scrollregion=(0, 0, total_width, 100))
+
+        # Обновляем отображение
+        self.update_display()
+
 
         # CAPS LOCK
         caps_on = self.check_caps_lock()
@@ -308,26 +311,15 @@ class TypingGUI:
         )
         self.canvas.delete("all")
         self.canvas.create_text(400, 30, text=msg, fill=FG_COLOR, font=("Press Start 2P", 14), justify="center")
-        self.entry.config(state="disabled")
         self.stats_var.set(f"Точность: {stats['accuracy']}% | WPM: {stats['wpm']}")
 
     def on_key_release(self, event=None):
-        if event and event.keysym in ("Return", "BackSpace", "Shift_L", "Shift_R", "Control_L", "Control_R"):
+        # ЗАМЕНИТЕ НА:
+        if event and event.keysym in ("Return", "BackSpace", "Shift_L", "Shift_R"):
             return
 
-        typed = self.entry.get()
-        target_len = len(self.current_word)
-
-        # Обрезаем, но ВСЕГДА обновляем подсветку
-        if len(typed) > target_len:
-            self.entry.delete(target_len, tk.END)
-
-        # Обновляем подсветку ДО проверки на отправку
-        self.update_highlighting(typed)
-
-        # Если ввод полный — отправляем через after
-        if len(typed) == target_len:
-            self.root.after(50, self.submit_current)
+        # Обновляем подсветку
+        self.update_display()
 
         # CAPS LOCK
         caps_on = self.check_caps_lock()
@@ -336,7 +328,25 @@ class TypingGUI:
         else:
             self.status_label.config(text="")
 
-        self.entry.xview('moveto', 0.5)  # ← КУРСОР ВСЕГДА В ЦЕНТРЕ
+
+    def on_key_press(self, event):
+        if self.is_training_ended:
+            return "break"
+
+        if not event.char or not event.char.isprintable():
+            return "break"
+
+        if self.current_index < len(self.current_word) and event.char == self.current_word[self.current_index]:
+            self.current_index += 1
+            self.user_input += event.char
+            self.update_display()
+
+            if self.current_index == len(self.current_word):
+                self.is_training_ended = True
+                self.submit_current()
+
+        return "break"
+
 
     def update_highlighting(self, typed: str):
         # Удаляем ВСЕ дочерние элементы canvas напрямую через tags
@@ -368,18 +378,15 @@ class TypingGUI:
 
     def submit_current(self, event=None):
         print("[DEBUG] submit_current вызван!")
-        user_input = self.entry.get().strip()
-        print(f"[DEBUG] user_input = '{user_input}'")
-        if not user_input:
+        print(f"[DEBUG] user_input = '{self.user_input}'")
+
+        if not self.user_input:
             print("[DEBUG] user_input пустой — выход")
             return
 
         self.session.start_timer()
-        user_input = self.entry.get()
-        if not user_input:
-            return
 
-        result = self.session.submit(user_input)
+        result = self.session.submit(self.user_input)
 
         # Обработка завершения ВСЕГО УРОКА
         if result.get("done"):
@@ -419,7 +426,7 @@ class TypingGUI:
         if accuracy >= 90.0:
             praise = "🔥 Алмаз добыт! Идеально!"
             self.diamonds += 1
-            self.diamond_label.config(text=f"Алмазов: {self.diamonds}")
+            self.diamonds_label.config(text=f"Алмазов: {self.diamonds}")
             self.play_sound("победа")
         elif accuracy >= 80.0:
             praise = "🟩 Хорошо. Можно быстрее!"
@@ -431,8 +438,13 @@ class TypingGUI:
         self.stats_var.set(f"Точность: {accuracy:.1f}% | {praise}")
 
         # Сброс ввода и переход к следующему слову
-        self.entry.delete(0, tk.END)
+
         self.root.after(300, self.update_prompt)
+        # Сброс позиции для нового упражнения
+        self.canvas.xview_moveto(0)
+        self.user_input = ""
+        self.current_index = 0
+        self.is_training_ended = False
         print(f"[DEBUG] index={self.session.index}, exercises_len={len(self.session.exercises)}, done={result.get('done')}")
 
     def load_next_level(self, event=None):
@@ -553,8 +565,8 @@ class TypingGUI:
     def on_window_click(self, event):
         """Снимает фокус с entry при клике по окну (не по entry)."""
         # Если клик не по entry — снимаем фокус
-        if event.widget != self.entry:
-            self.root.focus_set()  # переносим фокус на root
+
+        self.root.focus_set()  # переносим фокус на root
 
     def on_resize(self, event):
         w, h = event.width, event.height
@@ -583,23 +595,54 @@ class TypingGUI:
         except Exception as e:
             print(f"[ФОН] Ошибка: {e}")
 
-    # def update_live_stats(self):
-    #     if not hasattr(self, 'root') or not self.root.winfo_exists():
-    #         return
-    #     if not hasattr(self, 'session') or not self.session.time_start:
-    #         self.root.after(500, self.update_live_stats)
-    #         return
-    #
-    #     elapsed = time.time() - self.session.time_start
-    #     if elapsed > 0:
-    #         cpm = len(self.input_var.get()) / (elapsed / 60)
-    #         wpm = cpm / 5
-    #         color = "green" if wpm > 20 else "red"
-    #         self.stats_label.config(
-    #             text=f"WPM: {wpm:.0f} | CPM: {cpm:.0f}",
-    #             fg=color,
-    #             font=("Press Start 2P", 14, "bold")
-    #         )
-    #     # Только если окно ещё живо
-    #     if self.root.winfo_exists():
-    #         self.root.after(500, self.update_live_stats)
+    def on_backspace(self, event):
+        if self.current_index > 0 and not self.is_training_ended:
+            self.current_index -= 1
+            self.user_input = self.user_input[:-1]  # ← ДОБАВЬТЕ ЭТУ СТРОКУ
+            self.update_display()
+        return "break"
+
+    def update_display(self):
+        # Очищаем Canvas
+        self.canvas.delete("all")
+
+        # Получаем текущее упражнение
+        current_text = self.current_word
+        if not current_text:
+            return
+
+        # ФИКСИРОВАННАЯ ПОЗИЦИЯ КУРСОРА (центр экрана)
+        self.canvas.update_idletasks()
+        canvas_width = self.canvas.winfo_width()
+        if canvas_width <= 1:
+            canvas_width = 800
+
+        # Позиция курсора - чуть левее центра, чтобы было место для новых символов
+        CURSOR_FIXED_X = canvas_width // 2 - 50  # Например, 350px при ширине 800
+
+        # Вычисляем смещение для ВСЕГО текста
+        # Хотим, чтобы текущий символ был в позиции CURSOR_FIXED_X
+        current_char_center = 20 + self.current_index * 26 + 12
+        offset = CURSOR_FIXED_X - current_char_center
+
+        for i, char in enumerate(current_text):
+            # Определяем цвет
+            if i < self.current_index:
+                color = CORRECT_COLOR
+            elif i == self.current_index:
+                color = CURRENT_BG
+            else:
+                color = "#8B7D6B"
+
+            x = 20 + i * 26 + offset
+
+            if -50 < x < canvas_width + 50:
+                # Рисуем основной блок
+                self.canvas.create_rectangle(x, 10, x + 24, 34, fill=color)
+
+                # Черная обводка ТОЛЬКО для текущего символа
+                if i == self.current_index:
+                    self.canvas.create_rectangle(x, 10, x + 24, 34, outline="black", width=2, fill="")
+
+                # Текст
+                self.canvas.create_text(x + 12, 22, text=char, fill="white", font=("Press Start 2P", 14))
