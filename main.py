@@ -40,12 +40,12 @@ class StartScreen:
         self.root.bind("<Configure>", resize_bg)
         resize_bg()
 
-        title_font = tkfont.Font(family="Arial", size=20, weight="bold")
-        label_font = tkfont.Font(family="Arial", size=14)
-        button_font = tkfont.Font(family="Arial", size=12, weight="bold")
+        title_font = tkfont.Font(family="Press Start 2P", size=14, weight="bold")
+        label_font = tkfont.Font(family="Press Start 2P", size=14)
+        button_font = tkfont.Font(family="Press Start 2P", size=12, weight="bold")
 
         tk.Label(
-            self.root, text="Приветствую тебя ученик",
+            self.root, text="Да прибудет с тобой Сила ученик",
             bg=BG_COLOR, fg=FG_COLOR, font=title_font
         ).pack(pady=20)
 
@@ -58,11 +58,11 @@ class StartScreen:
         lang_frame.pack()
 
         ru_btn = tk.Button(
-            lang_frame, text="Русский",
+            lang_frame, text="Славянский",
             command=lambda: self.select_language("ru"),
             font=button_font, bg=ACCENT_COLOR, fg="white", width=15, height=2)
         en_btn = tk.Button(
-            lang_frame, text="English",
+            lang_frame, text="Буржуйский",
             command=lambda: self.select_language("en"),
             font=button_font, bg="#5a5a5a", fg="white", width=15, height=2)
         ru_btn.pack(side="left", padx=10)
@@ -75,7 +75,7 @@ class StartScreen:
 
         self.track_var = tk.StringVar(value="beginner")
         beginner_rb = tk.Radiobutton(
-            self.root, text="Новичок (с нуля: позиция пальцев → слова)",
+            self.root, text="Junior (Тренирую скилл)",
             variable=self.track_var, value="beginner",
             bg=BG_COLOR, fg=FG_COLOR,
             selectcolor=ACCENT_COLOR,
@@ -83,7 +83,7 @@ class StartScreen:
             font=("Press Start 2P", 10), anchor="w"
         )
         advanced_rb = tk.Radiobutton(
-            self.root, text="Продвинутый (уже печатаю, хочу скорость)",
+            self.root, text="Senior (Варюсь в этом)",
             variable=self.track_var, value="advanced",
             bg=BG_COLOR, fg=FG_COLOR,
             selectcolor=ACCENT_COLOR,
@@ -95,7 +95,7 @@ class StartScreen:
 
         start_btn = tk.Button(
             self.root,
-            text="Начать обучение",
+            text="Поехали",
             command=self.start_training,
             font=button_font,
             bg="#4caf50",
@@ -108,7 +108,7 @@ class StartScreen:
         tk.Label(
             self.root,
             text="После выбора нажмите Enter для отправки слова.\nТочность < 80% - слово повторится.",
-            bg=BG_COLOR, fg="#a0a0a0", font=("Arial", 10)
+            bg=BG_COLOR, fg="#a0a0a0", font=("Press Start 2P", 10)
         ).pack(pady=10)
 
     def select_language(self, lang: str):
@@ -118,9 +118,9 @@ class StartScreen:
             if isinstance(widget, tk.Frame):
                 for btn in widget.winfo_children():
                     if isinstance(btn, tk.Button):
-                        if btn["text"] == "Русский":
+                        if btn["text"] == "Славянский":
                             btn.config(bg=ACCENT_COLOR if lang == "ru" else "#5a5a5a")
-                        elif btn["text"] == "English":
+                        elif btn["text"] == "Буржуйский":
                             btn.config(bg=ACCENT_COLOR if lang == "en" else "#5a5a5a")
 
     def start_training(self):

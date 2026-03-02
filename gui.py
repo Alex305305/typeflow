@@ -50,6 +50,12 @@ class TypingGUI:
         self.user_input = ""
         self.is_training_ended = False
 
+        # Режим отображения: False = Minecraft, True = Terminal
+        self.devops_mode = False
+        # Ссылки на меню-панель (будет создано позже)
+        self.menu_panel = None
+        self.mode_label = None
+
         self.setup_ui()
 
         # Клик по окну снимает фокус с entry
@@ -89,40 +95,95 @@ class TypingGUI:
 
 
     def setup_ui(self):
-        menu = tk.Menu(self.root)
-        self.root.config(menu=menu)
+        # Убираем стандартное меню (не создаём menu = tk.Menu)
+        # Создаём кастомную панель меню
+        self.menu_panel = tk.Frame(
+            self.root,
+            bg='#3C2A1E',  # цвет земли
+            height=40,
+            relief='raised',
+            bd=3
+        )
+        self.menu_panel.pack(fill="x", padx=5, pady=5)
+        self.menu_panel.pack_propagate(False)
 
-        file_menu = tk.Menu(menu, tearoff=0, font=("Press Start 2P", 8))
-        menu.add_cascade(label="Файл", menu=file_menu, font=("Press Start 2P", 8))
-        file_menu.add_command(label="Перезапустить", command=self.restart, font=("Press Start 2P", 8))
-        file_menu.add_command(label="Выход", command=self.root.quit, font=("Press Start 2P", 8))
+        # Кнопки меню
+        buttons = [
+            ("📁 Файл", self.show_file_menu),
+            ("📊 История", self.show_history),
+            ("⚙️ Настройки", self.show_settings),
+            ("📚 Уроки", self.show_lessons),
+            ("💎 Достижения", self.show_achievements)
+        ]
 
-        stats_menu = tk.Menu(menu, tearoff=0, font=("Press Start 2P", 8))
-        menu.add_cascade(label="Статистика", menu=stats_menu, font=("Press Start 2P", 8))
-        stats_menu.add_command(label="История", command=self.show_history, font=("Press Start 2P", 8))
+        for text, command in buttons:
+            # Рамка кнопки (эффект блока)
+            btn_frame = tk.Frame(
+                self.menu_panel,
+                bg='#8B8B8B',
+                relief='raised',
+                bd=2
+            )
+            btn_frame.pack(side="left", padx=3, pady=3)
 
-        self.root.title("Тренажер слепой печати")
-        self.root.geometry("800x600")
-        self.root.configure(bg=BG_COLOR)
-        self.root.bind("<Escape>", lambda _: self.root.quit())
+            btn = tk.Button(
+                btn_frame,
+                text=text,
+                command=command,
+                bg='#B0B0B0',
+                fg='white',
+                font=("Press Start 2P", 8),
+                relief='flat',
+                padx=8,
+                pady=3,
+                cursor='hand2'
+            )
+            btn.pack(padx=1, pady=1)
 
+            # Эффекты наведения
+            btn.bind("<Enter>", lambda e, b=btn: b.configure(bg='#D0D0D0'))
+            btn.bind("<Leave>", lambda e, b=btn: b.configure(bg='#B0B0B0'))
+            btn.bind("<Button-1>", lambda e, b=btn: b.configure(relief='sunken'))
+            btn.bind("<ButtonRelease-1>", lambda e, b=btn: b.configure(relief='flat'))
 
-        # Поле ввода
+        # Индикатор режима (Minecraft/Terminal)
+        self.mode_frame = tk.Frame(
+            self.menu_panel,
+            bg='#2D2D2D',
+            relief='sunken',
+            bd=2
+        )
+        self.mode_frame.pack(side="right", padx=10, pady=3)
+
+        self.mode_label = tk.Label(
+            self.mode_frame,
+            text="⚡ Minecraft",
+            font=("Press Start 2P", 7),
+            bg='#2D2D2D',
+            fg='#7CFC00'
+        )
+        self.mode_label.pack(padx=5, pady=2)
+
+        # Привязываем клик для смены режима
+        self.mode_frame.bind("<Button-1>", self.toggle_mode)
+        self.mode_label.bind("<Button-1>", self.toggle_mode)
+
+        # Основной canvas (прозрачный фон)
         self.canvas = tk.Canvas(
             self.root,
-            bg=BG_COLOR,
-            height=60,
-            highlightthickness=0
+            bg=BG_COLOR,  # прозрачный фон (будет виден фон главного окна)
+            highlightthickness=0,
+            height=60
         )
         self.canvas.pack(pady=20, padx=40, fill="x")
-        self.canvas.focus_set()  # Фокус на Canvas
+        self.canvas.focus_set()
 
-        # Привязываем нажатия клавиш
+        # Привязываем клавиши
         self.root.bind("<Key>", self.on_key_press)
         self.root.bind("<BackSpace>", self.on_backspace)
+        self.root.bind("<Return>", lambda e: self.submit_current())
 
-
-        # Статистика
+        # Статистика (внизу)
         self.stats_var = tk.StringVar(value="Точность: — | WPM: —")
         self.stats_label = tk.Label(
             self.root,
@@ -134,44 +195,231 @@ class TypingGUI:
             justify="center"
         )
         self.stats_label.pack(pady=20, padx=40, fill="x")
-        # Алмазы — ТОЛЬКО ОДИН РАЗ!
+
+        # Алмазы — правый верхний угол
         self.diamonds_label = tk.Label(
             self.root,
-            text="Алмазов: 0",
+            text=f"Алмазов: {self.diamonds}",
             font=("Press Start 2P", 12),
             bg=BG_COLOR,
             fg="#4CC9F0"
         )
-        self.diamonds_label.place(relx=0.98, rely=0.02, anchor="ne")
+        """ relx=0.98  – почти у правого края.
+            rely=0.98  – почти у нижнего края.
+            anchor="se" – точка привязки – юго-восток (правый нижний угол метки)
+        """
+        self.diamonds_label.place(relx=0.98, rely=0.98, anchor="se")
 
-        self.root.bind("<Return>", lambda e: self.submit_current())
-
+        # Статус CAPS LOCK
+        self.status_label = tk.Label(
+            self.root,
+            text="",
+            font=("Press Start 2P", 10),
+            bg=BG_COLOR,
+            fg="white"
+        )
+        self.status_label.pack(side="bottom", pady=2)
 
         # Первое слово
         self.update_prompt()
 
+        # Звук приветствия
         self.root.after(500, lambda: self.play_sound("переход_на_другой_уровень"))
+
+    def show_file_menu(self):
+        """Выпадающее меню 'Файл' в стиле Minecraft"""
+        file_popup = tk.Menu(self.root, tearoff=0, bg='#2D2D2D', fg='white',
+                             font=("Press Start 2P", 8), bd=2, relief='raised')
+        file_popup.add_command(
+            label="🔄 Перезапустить урок",
+            command=self.restart,
+            foreground='#7CFC00'
+        )
+        file_popup.add_separator(background='#8B8B8B')
+        file_popup.add_command(
+            label="📂 Выбрать урок",
+            command=self.show_lesson_selector,
+            foreground='#FFD700'
+        )
+        file_popup.add_command(
+            label="📊 Статистика",
+            command=self.show_history,
+            foreground='#FFA500'
+        )
+        file_popup.add_separator(background='#8B8B8B')
+        file_popup.add_command(
+            label="🚪 Выход",
+            command=self.root.quit,
+            foreground='#FF4444'
+        )
+        # Показываем под курсором
+        x = self.root.winfo_pointerx()
+        y = self.root.winfo_pointery()
+        file_popup.tk_popup(x, y)
+
+    def show_lessons(self):
+        """Заглушка для выбора уроков (можно реализовать позже)"""
+        self.show_minecraft_message("📚 Выбор уроков (в разработке)", "#FFD700")
+
+    def show_settings(self):
+        """Заглушка для настроек"""
+        self.show_minecraft_message("⚙️ Настройки (в разработке)", "#7CFC00")
+
+    def show_achievements(self):
+        """Окно достижений"""
+        ach_window = tk.Toplevel(self.root)
+        ach_window.title("🏆 Достижения")
+        ach_window.geometry("500x400")
+        ach_window.configure(bg='#2D2D2D')
+
+        # Заголовок
+        title_frame = tk.Frame(ach_window, bg='#8B8B8B', relief='raised', bd=3)
+        title_frame.pack(pady=10, padx=20, fill="x")
+
+        tk.Label(
+            title_frame,
+            text="🏆 ДОСТИЖЕНИЯ",
+            font=("Press Start 2P", 16),
+            bg='#8B8B8B',
+            fg='#FFD700'
+        ).pack(pady=5)
+
+        # Список достижений (пример)
+        achievements = [
+            ("💎 Первый алмаз", "Наберите 100 символов без ошибок", self.diamonds >= 1),
+            ("⚡ Скорость света", "Достигните WPM > 60", False),
+            ("🔰 Новичок", "Пройдите 10 уроков", False),
+            ("🐧 Linux-гуру", "Наберите 1000 команд в терминале", False),
+        ]
+
+        for title, desc, earned in achievements:
+            ach_frame = tk.Frame(
+                ach_window,
+                bg='#4C4C4C' if earned else '#2D2D2D',
+                relief='raised' if earned else 'sunken',
+                bd=2
+            )
+            ach_frame.pack(pady=5, padx=20, fill="x")
+
+            color = '#FFD700' if earned else '#808080'
+
+            tk.Label(
+                ach_frame,
+                text=f"{'✅' if earned else '⬜'} {title}",
+                font=("Press Start 2P", 10),
+                bg='#4C4C4C' if earned else '#2D2D2D',
+                fg=color,
+                anchor='w'
+            ).pack(pady=5, padx=10, fill="x")
+
+            tk.Label(
+                ach_frame,
+                text=desc,
+                font=("Press Start 2P", 7),
+                bg='#4C4C4C' if earned else '#2D2D2D',
+                fg='white',
+                anchor='w'
+            ).pack(pady=2, padx=20, fill="x")
+
+    def toggle_mode(self, event=None):
+        """Переключение между Minecraft и Terminal режимами"""
+        self.devops_mode = not getattr(self, 'devops_mode', False)
+
+        if self.devops_mode:
+            self.mode_label.config(text="💻 Terminal", fg="#00FF00")
+            self.apply_terminal_style()
+        else:
+            self.mode_label.config(text="⚡ Minecraft", fg="#7CFC00")
+            self.apply_minecraft_style()
+
+        # Перерисовываем текущее упражнение
+        self.update_display()
+
+    def apply_terminal_style(self):
+        """Стиль терминала (зелёный/чёрный)"""
+        # Меняем глобальные цвета (если они используются в отрисовке)
+        # Так как CORRECT_COLOR и CURRENT_BG импортированы, меняем через globals?
+        # Проще использовать переменные экземпляра, но для простоты переопределим в update_display
+        # Сохраним флаг и в update_display будем проверять self.devops_mode
+        # Пока просто меняем фон канваса и меток
+        self.canvas.configure(bg='black')
+        self.stats_label.configure(bg='black', fg='#00FF00')
+        # Дополнительно: можно изменить цвета в update_display
+
+    def apply_minecraft_style(self):
+        """Возвращаем Minecraft стиль"""
+        self.canvas.configure(bg=BG_COLOR) # используем цвет фона
+        self.stats_label.configure(bg=BG_COLOR, fg='#a0a0a0')
+
+    def show_minecraft_message(self, text, color):
+        """Временное сообщение в стиле Minecraft (по центру)"""
+        msg = tk.Label(
+            self.root,
+            text=text,
+            font=("Press Start 2P", 14),
+            bg='#2D2D2D',
+            fg=color,
+            relief='raised',
+            bd=3
+        )
+        msg.place(relx=0.5, rely=0.5, anchor="center")
+        self.root.after(2000, msg.destroy)
+
+    def show_lesson_selector(self):
+        """Заглушка для выбора урока"""
+        self.show_minecraft_message("📂 Выбор урока (скоро)", "#FFD700")
+
 
 
     def on_enter(self):
-        # ЗАМЕНИТЕ НА:
-        print(f"[DEBUG] on_enter: user_input = '{self.user_input}'")
         if self.user_input:
             self.submit_current()
-        else:
-            print("[DEBUG] on_enter: input пустой — игнорируем")
 
     def show_history(self):
-        import tkinter.messagebox as msg
+        """Показывает историю в стиле терминала"""
         try:
-            with open("typing_history.csv", "r", encoding="utf-8") as f:
+            with open("typing_history.csv", "r") as f:
                 lines = f.readlines()
-            if len(lines) <= 1:
-                msg.showinfo("История", "История пуста.")
-            else:
-                msg.showinfo("История", "".join(lines[-6:]))
         except FileNotFoundError:
-            msg.showinfo("История", "Файл не найден. Пройдите урок.")    # ТУТ НАДО ПОДУМАТЬ МЕНЯТЬ ЛИ!
+            self.show_minecraft_message("❌ История не найдена", "#FF4444")
+            return
+
+        # Окно с текстом
+        hist_win = tk.Toplevel(self.root)
+        hist_win.title("📊 История тренировок")
+        hist_win.geometry("600x400")
+        hist_win.configure(bg='black')
+
+        text_widget = tk.Text(
+            hist_win,
+            bg='black',
+            fg='#00FF00',
+            font=("Courier", 10),
+            insertbackground='#00FF00',
+            wrap='none'
+        )
+        text_widget.pack(fill="both", expand=True, padx=5, pady=5)
+
+        scrollbar = tk.Scrollbar(text_widget)
+        scrollbar.pack(side="right", fill="y")
+        text_widget.config(yscrollcommand=scrollbar.set)
+        scrollbar.config(command=text_widget.yview)
+
+        # Заголовок
+        text_widget.insert("end", f"{'='*50}\n")
+        text_widget.insert("end", "📊 ИСТОРИЯ ТРЕНИРОВОК\n")
+        text_widget.insert("end", f"{'='*50}\n\n")
+
+        for line in lines[1:]:  # пропускаем заголовок
+            parts = line.strip().split(',')
+            if len(parts) >= 3:
+                text_widget.insert("end", f"📅 {parts[0]}\n")
+                text_widget.insert("end", f"📈 Точность: {parts[1]}%\n")
+                text_widget.insert("end", f"⚡ WPM: {parts[2]}\n")
+                text_widget.insert("end", f"{'-'*30}\n")
+
+        text_widget.configure(state='disabled')
+   # ТУТ НАДО ПОДУМАТЬ МЕНЯТЬ ЛИ!
 
     def create_chest_window(self):
         if (hasattr(self, 'chest_window') and
@@ -235,17 +483,7 @@ class TypingGUI:
             else:
                 # Резерв: рисуем прямоугольник
                 self.chest_canvas.create_rectangle(50, 50, 250, 150, fill="#8B4513", outline="black", width=3)
-                self.chest_canvas.create_text(150, 100, text="Сундук", fill="white", font=("Arial", 12))
-
-        # Алмазы — правый верхний угол
-        self.chest_diamond_label = tk.Label(
-            self.chest_window,
-            text=f"Алмазов: {self.diamonds}",
-            font=("Press Start 2P", 10),
-            fg="#4CC9F0",
-            bg="#392C23"
-        )
-        self.chest_diamond_label.place(relx=0.98, rely=0.02, anchor="ne")
+                self.chest_canvas.create_text(150, 100, text="Сундук", fill="white", font=("Press Start 2P", 12))
 
         # Кнопка
         tk.Button(
@@ -276,8 +514,6 @@ class TypingGUI:
         if not target:
             self.show_final_report()
             return
-
-        print(f"[DEBUG] Текущее упражнение: {target} (len={len(target)})")
 
         self.current_word = target
 
@@ -377,11 +613,7 @@ class TypingGUI:
                                     font=("Press Start 2P", 14, "bold"))
 
     def submit_current(self, event=None):
-        print("[DEBUG] submit_current вызван!")
-        print(f"[DEBUG] user_input = '{self.user_input}'")
-
         if not self.user_input:
-            print("[DEBUG] user_input пустой — выход")
             return
 
         self.session.start_timer()
@@ -445,7 +677,6 @@ class TypingGUI:
         self.user_input = ""
         self.current_index = 0
         self.is_training_ended = False
-        print(f"[DEBUG] index={self.session.index}, exercises_len={len(self.session.exercises)}, done={result.get('done')}")
 
     def load_next_level(self, event=None):
         # Удаляем сообщение
@@ -606,43 +837,79 @@ class TypingGUI:
         # Очищаем Canvas
         self.canvas.delete("all")
 
-        # Получаем текущее упражнение
         current_text = self.current_word
         if not current_text:
             return
 
-        # ФИКСИРОВАННАЯ ПОЗИЦИЯ КУРСОРА (центр экрана)
+        # Получаем ширину канваса
         self.canvas.update_idletasks()
         canvas_width = self.canvas.winfo_width()
         if canvas_width <= 1:
             canvas_width = 800
 
-        # Позиция курсора - чуть левее центра, чтобы было место для новых символов
-        CURSOR_FIXED_X = canvas_width // 2 - 50  # Например, 350px при ширине 800
+        # Фиксированная позиция курсора (чуть левее центра)
+        CURSOR_FIXED_X = canvas_width // 2 - 50
 
-        # Вычисляем смещение для ВСЕГО текста
-        # Хотим, чтобы текущий символ был в позиции CURSOR_FIXED_X
+        # Вычисляем смещение текста
         current_char_center = 20 + self.current_index * 26 + 12
         offset = CURSOR_FIXED_X - current_char_center
 
+        # Определяем цвета в зависимости от режима
+        if self.devops_mode:
+            # Terminal режим
+            colors = {
+                'correct': '#00FF00',      # зелёный
+                'current': '#FFFF00',       # жёлтый
+                'future': '#008000',         # тёмно-зелёный
+                'border': '#00FF00',
+                'text': '#00FF00'
+            }
+        else:
+            # Minecraft режим
+            colors = {
+                'correct': '#7CFC00',       # зелёный травы
+                'current': '#FFD700',        # золотой
+                'future': '#808080',          # серый камень
+                'border': '#2E231C',
+                'text': 'white'
+            }
+
+        # Рисуем символы
         for i, char in enumerate(current_text):
-            # Определяем цвет
             if i < self.current_index:
-                color = CORRECT_COLOR
+                color = colors['correct']
             elif i == self.current_index:
-                color = CURRENT_BG
+                color = colors['current']
             else:
-                color = "#8B7D6B"
+                color = colors['future']
 
             x = 20 + i * 26 + offset
 
+            # Рисуем только если символ виден (с запасом)
             if -50 < x < canvas_width + 50:
-                # Рисуем основной блок
-                self.canvas.create_rectangle(x, 10, x + 24, 34, fill=color)
+                # Основной прямоугольник
+                self.canvas.create_rectangle(x, 10, x+24, 34,
+                                             fill=color, outline=colors['border'], width=2)
 
-                # Черная обводка ТОЛЬКО для текущего символа
+                # Для текущего символа добавляем дополнительную обводку (чёрную в Minecraft, яркую в Terminal)
                 if i == self.current_index:
-                    self.canvas.create_rectangle(x, 10, x + 24, 34, outline="black", width=2, fill="")
+                    if self.devops_mode:
+                        # Жёлтая обводка в терминале
+                        self.canvas.create_rectangle(x-1, 9, x+25, 35,
+                                                     outline='#FFFF00', width=2, fill='')
+                    else:
+                        # Чёрная обводка в Minecraft
+                        self.canvas.create_rectangle(x, 10, x+24, 34,
+                                                     outline='black', width=2, fill='')
 
-                # Текст
-                self.canvas.create_text(x + 12, 22, text=char, fill="white", font=("Press Start 2P", 14))
+                # Текст с тенью (Minecraft стиль)
+                if not self.devops_mode:
+                    # Тень
+                    self.canvas.create_text(x+13, 23, text=char,
+                                            fill='#3F3F3F', font=("Press Start 2P", 14))
+                # Основной текст
+                self.canvas.create_text(x+12, 22, text=char,
+                                        fill=colors['text'], font=("Press Start 2P", 14))
+
+        # Опционально: нарисовать маркер позиции курсора (можно убрать)
+        # self.canvas.create_line(CURSOR_FIXED_X, 5, CURSOR_FIXED_X, 40, fill='red', width=1)
