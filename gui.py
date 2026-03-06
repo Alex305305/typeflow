@@ -8,7 +8,7 @@ from config import BG_COLOR, FG_COLOR, FONT_FAMILY, FONT_SIZE_INPUT, FONT_SIZE_P
 from core import TypingSession, save_session_to_csv
 from PIL import Image, ImageTk
 import config
-from lessons import get_next_level, get_lesson
+from lessons import LESSONS, LESSON_NAMES_RU, get_lesson, get_next_level
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -21,6 +21,7 @@ class TypingGUI:
         self.level_key = level_key
         self.session = TypingSession(track, level_key, language)
         self.diamonds = 0
+        self.sound_enabled = True  # звук включён по умолчанию
 
         # Обязательно: создаём ВСЕ атрибуты ДО setup_ui() Фон сразу
         # Создаём холст для фона
@@ -112,7 +113,7 @@ class TypingGUI:
             ("📁 Файл", self.show_file_menu),
             ("📊 История", self.show_history),
             ("⚙️ Настройки", self.show_settings),
-            ("📚 Уроки", self.show_lessons),
+            (("📚 Уроки", self.show_lesson_selector)),
             ("💎 Достижения", self.show_achievements)
         ]
 
@@ -237,11 +238,6 @@ class TypingGUI:
         )
         file_popup.add_separator(background='#8B8B8B')
         file_popup.add_command(
-            label="📂 Выбрать урок",
-            command=self.show_lesson_selector,
-            foreground='#FFD700'
-        )
-        file_popup.add_command(
             label="📊 Статистика",
             command=self.show_history,
             foreground='#FFA500'
@@ -257,13 +253,133 @@ class TypingGUI:
         y = self.root.winfo_pointery()
         file_popup.tk_popup(x, y)
 
-    def show_lessons(self):
-        """Заглушка для выбора уроков (можно реализовать позже)"""
-        self.show_minecraft_message("📚 Выбор уроков (в разработке)", "#FFD700")
-
     def show_settings(self):
-        """Заглушка для настроек"""
-        self.show_minecraft_message("⚙️ Настройки (в разработке)", "#7CFC00")
+        """Окно настроек"""
+        settings_win = tk.Toplevel(self.root)
+        settings_win.title("⚙️ Настройки")
+        settings_win.geometry("450x350")
+        settings_win.configure(bg='#2D2D2D')
+        settings_win.resizable(False, False)
+
+        # Заголовок
+        tk.Label(
+            settings_win,
+            text="⚙️ НАСТРОЙКИ",
+            font=("Press Start 2P", 16),
+            bg='#2D2D2D',
+            fg='#FFD700'
+        ).pack(pady=10)
+
+        # Фрейм для содержимого
+        content = tk.Frame(settings_win, bg='#3C2A1E', relief='sunken', bd=3)
+        content.pack(padx=20, pady=10, fill="both", expand=True)
+
+        # 1. Звук
+        sound_var = tk.BooleanVar(value=self.sound_enabled)
+        tk.Checkbutton(
+            content,
+            text="🔊 Включить звуки",
+            variable=sound_var,
+            bg='#4C4C4C',
+            fg='white',
+            selectcolor='#2D2D2D',
+            font=("Press Start 2P", 10),
+            anchor='w'
+        ).pack(fill="x", padx=20, pady=10)
+
+        # 2. Тема (Minecraft / Terminal)
+        theme_var = tk.StringVar(value="minecraft" if not self.devops_mode else "terminal")
+        tk.Label(
+            content,
+            text="🎨 Тема оформления:",
+            bg='#4C4C4C',
+            fg='white',
+            font=("Press Start 2P", 10)
+        ).pack(padx=20, pady=(10, 0), anchor='w')
+
+        theme_frame = tk.Frame(content, bg='#4C4C4C')
+        theme_frame.pack(padx=20, pady=5, fill="x")
+
+        tk.Radiobutton(
+            theme_frame,
+            text="Minecraft",
+            variable=theme_var,
+            value="minecraft",
+            bg='#4C4C4C',
+            fg='white',
+            selectcolor='#2D2D2D',
+            font=("Press Start 2P", 8)
+        ).pack(side="left", padx=5)
+
+        tk.Radiobutton(
+            theme_frame,
+            text="Terminal",
+            variable=theme_var,
+            value="terminal",
+            bg='#4C4C4C',
+            fg='white',
+            selectcolor='#2D2D2D',
+            font=("Press Start 2P", 8)
+        ).pack(side="left", padx=5)
+
+        # 3. Кнопка сброса статистики
+        tk.Button(
+            content,
+            text="🗑️ Сбросить статистику",
+            command=self.reset_statistics,
+            bg='#FFA500',
+            fg='black',
+            font=("Press Start 2P", 8),
+            padx=10,
+            pady=5
+        ).pack(pady=20)
+
+        # Кнопки сохранения и отмены
+        btn_frame = tk.Frame(settings_win, bg='#2D2D2D')
+        btn_frame.pack(pady=10)
+
+        def save():
+            # Сохраняем настройки
+            self.sound_enabled = sound_var.get()
+            # Применяем тему
+            if theme_var.get() == "minecraft" and self.devops_mode:
+                self.toggle_mode()  # переключаем на Minecraft
+            elif theme_var.get() == "terminal" and not self.devops_mode:
+                self.toggle_mode()  # переключаем на Terminal
+            settings_win.destroy()
+            self.show_minecraft_message("✅ Настройки сохранены", "#7CFC00")
+
+        tk.Button(
+            btn_frame,
+            text="💾 Сохранить",
+            command=save,
+            bg='#7CFC00',
+            fg='black',
+            font=("Press Start 2P", 10),
+            padx=20,
+            pady=5
+        ).pack(side="left", padx=10)
+
+        tk.Button(
+            btn_frame,
+            text="❌ Отмена",
+            command=settings_win.destroy,
+            bg='#FF4444',
+            fg='white',
+            font=("Press Start 2P", 10),
+            padx=20,
+            pady=5
+        ).pack(side="left", padx=10)
+
+
+    def reset_statistics(self):
+        """Сбрасывает файл статистики"""
+        try:
+            open("typing_history.csv", "w").close()  # очищаем файл
+            self.show_minecraft_message("📊 Статистика очищена", "#FFA500")
+        except Exception as e:
+            self.show_minecraft_message("❌ Ошибка при сбросе", "#FF4444")
+
 
     def show_achievements(self):
         """Окно достижений"""
@@ -366,9 +482,158 @@ class TypingGUI:
         self.root.after(2000, msg.destroy)
 
     def show_lesson_selector(self):
-        """Заглушка для выбора урока"""
-        self.show_minecraft_message("📂 Выбор урока (скоро)", "#FFD700")
+        """Открывает окно выбора урока в стиле Minecraft"""
+        track = self.session.track  # берём трек из сессии (beginner/advanced)
+        if track not in LESSONS:
+            self.show_minecraft_message("❌ Нет уроков для этого уровня", "#FF4444")
+            return
 
+        # Создаём окно
+        self.lesson_selector = tk.Toplevel(self.root)
+        self.lesson_selector.title("📚 Выбор урока")
+        self.lesson_selector.geometry("600x500")
+        self.lesson_selector.configure(bg='#2D2D2D')
+        self.lesson_selector.resizable(False, False)
+
+        # Заголовок
+        title_frame = tk.Frame(self.lesson_selector, bg='#8B8B8B', relief='raised', bd=3)
+        title_frame.pack(pady=10, padx=20, fill="x")
+
+        track_name = "НОВИЧОК" if track == "beginner" else "ПРОДВИНУТЫЙ"
+        tk.Label(
+            title_frame,
+            text=f"📚 УРОКИ • {track_name}",
+            font=("Press Start 2P", 14),
+            bg='#8B8B8B',
+            fg='#FFD700'
+        ).pack(pady=5)
+
+        # Основной фрейм со списком
+        list_frame = tk.Frame(self.lesson_selector, bg='#3C2A1E', relief='sunken', bd=3)
+        list_frame.pack(fill="both", expand=True, padx=20, pady=10)
+
+        # Скроллбар
+        scrollbar = tk.Scrollbar(list_frame)
+        scrollbar.pack(side="right", fill="y")
+
+        # Список уроков
+        self.lesson_listbox = tk.Listbox(
+            list_frame,
+            yscrollcommand=scrollbar.set,
+            bg='#4C4C4C',
+            fg='white',
+            font=("Press Start 2P", 8),
+            selectbackground='#7CFC00',
+            selectforeground='black',
+            bd=0,
+            highlightthickness=0,
+            height=15
+        )
+        self.lesson_listbox.pack(side="left", fill="both", expand=True)
+
+        scrollbar.config(command=self.lesson_listbox.yview)
+
+        # Заполняем список
+        self.populate_lesson_list(track)
+
+        # Кнопки
+        btn_frame = tk.Frame(self.lesson_selector, bg='#2D2D2D')
+        btn_frame.pack(pady=10)
+
+        load_btn = tk.Button(
+            btn_frame,
+            text="⚡ Загрузить",
+            command=self.load_selected_lesson,
+            bg='#7CFC00',
+            fg='black',
+            font=("Press Start 2P", 10),
+            padx=20,
+            pady=5,
+            cursor='hand2'
+        )
+        load_btn.pack(side="left", padx=10)
+
+        cancel_btn = tk.Button(
+            btn_frame,
+            text="❌ Отмена",
+            command=self.lesson_selector.destroy,
+            bg='#FF4444',
+            fg='white',
+            font=("Press Start 2P", 10),
+            padx=20,
+            pady=5,
+            cursor='hand2'
+        )
+        cancel_btn.pack(side="left", padx=10)
+
+        # Эффекты наведения
+        for btn in (load_btn, cancel_btn):
+            btn.bind("<Enter>", lambda e, b=btn: b.configure(bg='#D0D0D0' if b==load_btn else '#FF7777'))
+            btn.bind("<Leave>", lambda e, b=btn: b.configure(bg='#7CFC00' if b==load_btn else '#FF4444'))
+
+    def populate_lesson_list(self, track):
+        self.lesson_listbox.delete(0, tk.END)
+        levels = LESSONS.get(track, {})
+        for key in levels.keys():
+            # Берём русское название из словаря, если нет — автопреобразование
+            display_name = LESSON_NAMES_RU.get(key, key.split('_', 1)[-1].replace('_', ' ').capitalize())
+            self.lesson_listbox.insert(tk.END, display_name)
+
+    def load_selected_lesson(self):
+        """Загружает выбранный урок в сессию"""
+        selection = self.lesson_listbox.curselection()
+        if not selection:
+            self.show_minecraft_message("❌ Выберите урок!", "#FF4444")
+            return
+
+        track = self.session.track
+        levels = list(LESSONS.get(track, {}).keys())
+        if not levels:
+            return
+
+        selected_key = levels[selection[0]]
+        # Загружаем упражнения (язык берём из self.language, который сохранён в GUI)
+        lesson_words = get_lesson(track, selected_key, self.language)
+
+        if not lesson_words:
+            self.show_minecraft_message("❌ Урок пуст", "#FF4444")
+            return
+
+        # Обновляем сессию
+        self.session.exercises = lesson_words
+        self.session.level_key = selected_key  # запоминаем текущий уровень
+        self.session.index = 0
+        self.session.errors = 0
+        self.session.total_typed = 0
+        # Если в сессии есть счётчик времени, сбросьте его (например, self.session.start_time = None)
+
+        # Сбрасываем GUI-счётчики
+        self.diamonds = 0
+        self.update_diamonds_display()
+
+        # Перерисовываем текущее слово
+        self.update_prompt()
+
+        # Закрываем окно выбора
+        self.lesson_selector.destroy()
+
+        # Показываем сообщение
+        display_name = selected_key.split('_', 1)[-1].replace('_', ' ')
+        self.show_minecraft_message(f"✅ Загружен: {display_name}", "#7CFC00")
+
+    def update_diamonds_display(self):
+        """Обновляет отображение счётчика алмазов"""
+        if hasattr(self, 'diamonds_label') and self.diamonds_label.winfo_exists():
+            self.diamonds_label.config(text=f"Алмазов: {self.diamonds}")
+
+
+    def update_prompt(self):
+        """Обновляет текущее слово из списка exercises (метод уже должен существовать)"""
+        # Убедитесь, что этот метод у вас есть. Обычно он выглядит так:
+        # if self.exercises:
+        #     self.current_word = self.exercises[self.current_index % len(self.exercises)]
+        #     self.update_display()
+        # Если его нет, добавьте. Но скорее всего он уже есть.
 
 
     def on_enter(self):

@@ -427,6 +427,59 @@ LESSONS = {
     }
 }
 
+
+# Русские названия для уроков (для отображения в интерфейсе)
+LESSON_NAMES_RU = {
+    # Beginner
+    "1_base_position": "Базовая позиция (А/О)",
+    "2_middle_fingers": "Средние пальцы (В/Л)",
+    "3_ring_fingers": "Безымянные пальцы (Ы/Д)",
+    "4_left_pinky": "Мизинец левой руки (Ф)",
+    "5_right_pinky": "Мизинец правой руки (Ж/Э)",
+    "6_left_home_row": "Домашний ряд левой (ФЫВАП)",
+    "7_right_home_row": "Домашний ряд правой (РОЛДЖЭ)",
+    "8_top_left": "Верхний ряд левой (ЙЦУКЕ)",
+    "9_top_right": "Верхний ряд правой (НГШЩЗХЪ)",
+    "10_bottom_left": "Нижний ряд левой (ЯЧСМИ)",
+    "11_bottom_right": "Нижний ряд правой (ТЬБЮ.)",
+    "12_digits": "Цифры",
+    "13_punctuation": "Знаки препинания",
+    "14_simple_words": "Простые слова",
+    "15_basic_sentences": "Базовые предложения",
+    "16_common_words": "Частотные слова",
+    "17_linux_commands": "Команды Linux",
+    "18_python_basics": "Основы Python",
+    "19_sentences_ru": "Предложения на русском",
+    "20_sentences_en_translit": "Английские фразы (транслит)",
+    "21_json_yaml_snippets": "JSON/YAML сниппеты",
+    "22_git_commands": "Команды Git",
+    "23_docker_k8s": "Docker и Kubernetes",
+    "24_python_syntax": "Синтаксис Python",
+    "25_advanced_ru": "Продвинутый русский",
+    "26_advanced_en": "Продвинутый английский",
+    "27_code_mix_ru_en": "Смесь кода и текста",
+    "28_long_sentences": "Длинные предложения",
+    "29_full_keyboard": "Вся клавиатура",
+    "30_mastery": "Мастерство",
+    # Advanced
+    "1_bash_scripts": "Bash-скрипты",
+    "2_git_workflows": "Git-воркфлоу",
+    "3_k8s_yaml": "Kubernetes YAML",
+    "4_python_advanced": "Продвинутый Python",
+    "5_prose_ru": "Проза на русском",
+    "6_prose_en": "Проза на английском",
+    "7_mixed_code_text": "Смешанный код/текст",
+    "8_speed_mastery": "Скоростной набор",
+    "9_linux_admin": "Администрирование Linux",
+    "10_python_ds": "Python Data Science",
+    "11_web_dev": "Веб-разработка",
+    "12_sql_queries": "SQL-запросы",
+    "13_terminal_mastery": "Мастерство терминала",
+    "14_algo_interview": "Алгоритмы (собеседования)",
+    "15_final_mastery": "Финальное мастерство",
+}
+
+
 def get_next_level(track: str, level_key: str):
     """Возвращает следующий уровень в треке или None, если конец."""
     levels = list(LESSONS[track].keys())
