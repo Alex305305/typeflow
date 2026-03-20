@@ -626,16 +626,6 @@ class TypingGUI:
         if hasattr(self, 'diamonds_label') and self.diamonds_label.winfo_exists():
             self.diamonds_label.config(text=f"Алмазов: {self.diamonds}")
 
-
-    def update_prompt(self):
-        """Обновляет текущее слово из списка exercises (метод уже должен существовать)"""
-        # Убедитесь, что этот метод у вас есть. Обычно он выглядит так:
-        # if self.exercises:
-        #     self.current_word = self.exercises[self.current_index % len(self.exercises)]
-        #     self.update_display()
-        # Если его нет, добавьте. Но скорее всего он уже есть.
-
-
     def on_enter(self):
         if self.user_input:
             self.submit_current()
@@ -770,22 +760,25 @@ class TypingGUI:
             self.chest_window.withdraw()
 
     def update_prompt(self):
+        """Обновляет текущее слово из сессии"""
         # Защита от двойного вызова
         if not hasattr(self, 'canvas') or not self.canvas.winfo_exists():
             return
+
         self.canvas.delete("all")  # fallback
         self.canvas.delete(*self.canvas.find_all())  # принудительная очистка
+
+        # Получаем текущее целевое слово из сессии
         target = self.session.get_current_target()
         if not target:
             self.show_final_report()
             return
 
+        # Обновляем текущее слово
         self.current_word = target
 
-        # Сброс атрибутов (ТОЛЬКО ОДИН РАЗ!)
-        self.current_index = 0
-        self.user_input = ""  # ← СТРОКА, НЕ StringVar! УДАЛИТЕ .set()
-        self.is_training_ended = False
+        # НЕ СБРАСЫВАЕМ current_index и user_input!
+        # Они должны сохранять своё значение для текущего слова
 
         # Обновляем scrollregion
         total_width = len(self.current_word) * 26 + 40
@@ -794,7 +787,6 @@ class TypingGUI:
         # Обновляем отображение
         self.update_display()
 
-
         # CAPS LOCK
         caps_on = self.check_caps_lock()
         if caps_on:
@@ -802,6 +794,7 @@ class TypingGUI:
         else:
             self.status_label.config(text="")
 
+            
     def show_final_report(self):
         stats = self.session.get_final_stats()
         msg = (
@@ -898,23 +891,36 @@ class TypingGUI:
                 self.session.speed_history = []
                 self.session.time_start = time.time()
 
-                # Показываем сообщение
+                # Удаляем старые сообщения с галочкой
                 for widget in self.root.winfo_children():
-                    if hasattr(widget, 'cget') and widget.cget('text').startswith('✅'):
-                        widget.destroy()
+                    try:
+                        if hasattr(widget, 'cget') and 'text' in widget.keys() and widget.cget('text').startswith('✅'):
+                            widget.destroy()
+                    except (tk.TclError, AttributeError):
+                        pass
+
+                # Показываем сообщение о завершении уровня
                 self.message_label = tk.Label(
                     self.root,
                     text="✅ Уровень пройден!\nНажмите Enter, чтобы продолжить",
                     font=("Press Start 2P", 14, "bold"),
                     fg="lime",
-                    bg=BG_COLOR
+                    bg=BG_COLOR,
+                    relief="raised",
+                    bd=3
                 )
-                self.message_label.pack(pady=10)
+                self.message_label.place(relx=0.5, rely=0.5, anchor="center")
+
+                # Привязываем Enter к загрузке следующего уровня
                 self.root.bind("<Return>", lambda e: self.load_next_level())
-                return  # ← ВАЖНО: выходим, не вызывая update_prompt!
+
+                # Автоудаление через 5 секунд
+                self.root.after(5000, self.auto_destroy_message)
+
+                return  # ВЫХОДИМ, не вызывая update_prompt
             else:
                 self.show_final_report()
-                return  # ← ВАЖНО: выходим
+                return  # ВЫХОДИМ
 
         # --- Если урок НЕ завершён ---
         accuracy = result.get("accuracy", 0)
@@ -935,7 +941,6 @@ class TypingGUI:
         self.stats_var.set(f"Точность: {accuracy:.1f}% | {praise}")
 
         # Сброс ввода и переход к следующему слову
-
         self.root.after(300, self.update_prompt)
         # Сброс позиции для нового упражнения
         self.canvas.xview_moveto(0)
@@ -943,23 +948,50 @@ class TypingGUI:
         self.current_index = 0
         self.is_training_ended = False
 
+    def auto_destroy_message(self):
+        """Автоматически удаляет сообщение и восстанавливает обработку Enter"""
+        if hasattr(self, 'message_label') and self.message_label.winfo_exists():
+            self.message_label.destroy()
+            # Восстанавливаем стандартную обработку Enter
+            self.root.unbind("<Return>")
+            self.root.bind("<Return>", lambda e: self.submit_current())
+
     def load_next_level(self, event=None):
-        # Удаляем сообщение
-        if hasattr(self, 'message_label'):
+        """Загружает следующий уровень после завершения текущего"""
+
+        # Удаляем сообщение, если оно ещё есть
+        if hasattr(self, 'message_label') and self.message_label.winfo_exists():
             self.message_label.destroy()
 
-        # Получаем СЛЕДУЮЩИЙ уровень через функцию из lessons.py
+        # Получаем следующий уровень
         next_level_key = get_next_level(self.session.track, self.session.level_key)
 
         if next_level_key:
-            # Создаём НОВУЮ сессию для следующего уровня
-            self.session = TypingSession(self.session.track, next_level_key, self.session.language)
+            # Создаём новую сессию для следующего уровня
+            self.session = TypingSession(
+                self.session.track,
+                next_level_key,
+                self.session.language
+            )
+            # Сбрасываем счётчики
             self.current_exercise_index = 0
+            self.user_input = ""
+            self.current_index = 0
+            self.is_training_ended = False
+
+            # Восстанавливаем стандартную обработку Enter
+            self.root.unbind("<Return>")
+            self.root.bind("<Return>", lambda e: self.submit_current())
+
+            # Обновляем отображение
             self.update_prompt()
-            self.root.unbind("<Return>")  # Убираем привязку
+
+            # Показываем сообщение о загрузке нового уровня
+            self.show_minecraft_message(f"📚 Уровень {next_level_key}", "#7CFC00")
+
         else:
             # Конец трека — показываем сообщение
-            self.show_completion_message()
+            self.show_final_report()
 
     def resize_background(self, event=None):
         # Не обрабатываем, если окно ещё не видимо
