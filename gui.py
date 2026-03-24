@@ -7,6 +7,7 @@ import time
 from config import BG_COLOR, FG_COLOR, FONT_FAMILY, FONT_SIZE_INPUT, FONT_SIZE_PROMPT, CORRECT_COLOR, ERROR_COLOR, CURRENT_BG
 from core import TypingSession, save_session_to_csv
 from PIL import Image, ImageTk
+from user_manager import UserManager
 import config
 from lessons import LESSONS, LESSON_NAMES_RU, get_lesson, get_next_level
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -14,8 +15,9 @@ PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
 class TypingGUI:
-    def __init__(self, root: tk.Tk, track: str, level_key: str, language: str):
+    def __init__(self, root:tk.Tk, track:str, level_key:str, language:str, username=None):
         self.root = root
+        self.user_manager = UserManager()
         self.language = language
         self.track = track
         self.level_key = level_key
@@ -110,11 +112,11 @@ class TypingGUI:
 
         # Кнопки меню
         buttons = [
-            ("📁 Файл", self.show_file_menu),
-            ("📊 История", self.show_history),
-            ("⚙️ Настройки", self.show_settings),
-            (("📚 Уроки", self.show_lesson_selector)),
-            ("💎 Достижения", self.show_achievements)
+            ("Файл", self.show_file_menu),
+            ("История", self.show_history),
+            ("Настройки", self.show_settings),
+            (("Уроки", self.show_lesson_selector)),
+            ("Достижения", self.show_achievements)
         ]
 
         for text, command in buttons:
@@ -232,19 +234,15 @@ class TypingGUI:
         file_popup = tk.Menu(self.root, tearoff=0, bg='#2D2D2D', fg='white',
                              font=("Press Start 2P", 8), bd=2, relief='raised')
         file_popup.add_command(
-            label="🔄 Перезапустить урок",
+            label="Перезапустить урок",
             command=self.restart,
             foreground='#7CFC00'
         )
         file_popup.add_separator(background='#8B8B8B')
-        file_popup.add_command(
-            label="📊 Статистика",
-            command=self.show_history,
-            foreground='#FFA500'
-        )
+
         file_popup.add_separator(background='#8B8B8B')
         file_popup.add_command(
-            label="🚪 Выход",
+            label="Выход",
             command=self.root.quit,
             foreground='#FF4444'
         )
@@ -256,7 +254,7 @@ class TypingGUI:
     def show_settings(self):
         """Окно настроек"""
         settings_win = tk.Toplevel(self.root)
-        settings_win.title("⚙️ Настройки")
+        settings_win.title("Настройки")
         settings_win.geometry("450x350")
         settings_win.configure(bg='#2D2D2D')
         settings_win.resizable(False, False)
@@ -264,7 +262,7 @@ class TypingGUI:
         # Заголовок
         tk.Label(
             settings_win,
-            text="⚙️ НАСТРОЙКИ",
+            text="НАСТРОЙКИ",
             font=("Press Start 2P", 16),
             bg='#2D2D2D',
             fg='#FFD700'
@@ -278,7 +276,7 @@ class TypingGUI:
         sound_var = tk.BooleanVar(value=self.sound_enabled)
         tk.Checkbutton(
             content,
-            text="🔊 Включить звуки",
+            text="Включить звуки",
             variable=sound_var,
             bg='#4C4C4C',
             fg='white',
@@ -291,7 +289,7 @@ class TypingGUI:
         theme_var = tk.StringVar(value="minecraft" if not self.devops_mode else "terminal")
         tk.Label(
             content,
-            text="🎨 Тема оформления:",
+            text="Тема оформления:",
             bg='#4C4C4C',
             fg='white',
             font=("Press Start 2P", 10)
@@ -325,7 +323,7 @@ class TypingGUI:
         # 3. Кнопка сброса статистики
         tk.Button(
             content,
-            text="🗑️ Сбросить статистику",
+            text="Сбросить статистику",
             command=self.reset_statistics,
             bg='#FFA500',
             fg='black',
@@ -351,7 +349,7 @@ class TypingGUI:
 
         tk.Button(
             btn_frame,
-            text="💾 Сохранить",
+            text="Сохранить",
             command=save,
             bg='#7CFC00',
             fg='black',
@@ -362,7 +360,7 @@ class TypingGUI:
 
         tk.Button(
             btn_frame,
-            text="❌ Отмена",
+            text="Отмена",
             command=settings_win.destroy,
             bg='#FF4444',
             fg='white',
@@ -384,7 +382,7 @@ class TypingGUI:
     def show_achievements(self):
         """Окно достижений"""
         ach_window = tk.Toplevel(self.root)
-        ach_window.title("🏆 Достижения")
+        ach_window.title("Достижения")
         ach_window.geometry("500x400")
         ach_window.configure(bg='#2D2D2D')
 
@@ -394,7 +392,7 @@ class TypingGUI:
 
         tk.Label(
             title_frame,
-            text="🏆 ДОСТИЖЕНИЯ",
+            text="ДОСТИЖЕНИЯ",
             font=("Press Start 2P", 16),
             bg='#8B8B8B',
             fg='#FFD700'
@@ -402,10 +400,10 @@ class TypingGUI:
 
         # Список достижений (пример)
         achievements = [
-            ("💎 Первый алмаз", "Наберите 100 символов без ошибок", self.diamonds >= 1),
-            ("⚡ Скорость света", "Достигните WPM > 60", False),
-            ("🔰 Новичок", "Пройдите 10 уроков", False),
-            ("🐧 Linux-гуру", "Наберите 1000 команд в терминале", False),
+            ("Первый алмаз", "Наберите 100 символов без ошибок", self.diamonds >= 1),
+            ("Скорость света", "Достигните WPM > 60", False),
+            ("Новичок", "Пройдите 10 уроков", False),
+            ("Linux-гуру", "Наберите 1000 команд в терминале", False),
         ]
 
         for title, desc, earned in achievements:
@@ -442,10 +440,10 @@ class TypingGUI:
         self.devops_mode = not getattr(self, 'devops_mode', False)
 
         if self.devops_mode:
-            self.mode_label.config(text="💻 Terminal", fg="#00FF00")
+            self.mode_label.config(text="Terminal", fg="#00FF00")
             self.apply_terminal_style()
         else:
-            self.mode_label.config(text="⚡ Minecraft", fg="#7CFC00")
+            self.mode_label.config(text="Minecraft", fg="#7CFC00")
             self.apply_minecraft_style()
 
         # Перерисовываем текущее упражнение
@@ -490,7 +488,7 @@ class TypingGUI:
 
         # Создаём окно
         self.lesson_selector = tk.Toplevel(self.root)
-        self.lesson_selector.title("📚 Выбор урока")
+        self.lesson_selector.title("Выбор урока")
         self.lesson_selector.geometry("600x500")
         self.lesson_selector.configure(bg='#2D2D2D')
         self.lesson_selector.resizable(False, False)
@@ -502,7 +500,7 @@ class TypingGUI:
         track_name = "НОВИЧОК" if track == "beginner" else "ПРОДВИНУТЫЙ"
         tk.Label(
             title_frame,
-            text=f"📚 УРОКИ • {track_name}",
+            text=f"УРОКИ • {track_name}",
             font=("Press Start 2P", 14),
             bg='#8B8B8B',
             fg='#FFD700'
@@ -662,15 +660,15 @@ class TypingGUI:
 
         # Заголовок
         text_widget.insert("end", f"{'='*50}\n")
-        text_widget.insert("end", "📊 ИСТОРИЯ ТРЕНИРОВОК\n")
+        text_widget.insert("end", "ИСТОРИЯ ТРЕНИРОВОК\n")
         text_widget.insert("end", f"{'='*50}\n\n")
 
         for line in lines[1:]:  # пропускаем заголовок
             parts = line.strip().split(',')
             if len(parts) >= 3:
-                text_widget.insert("end", f"📅 {parts[0]}\n")
-                text_widget.insert("end", f"📈 Точность: {parts[1]}%\n")
-                text_widget.insert("end", f"⚡ WPM: {parts[2]}\n")
+                text_widget.insert("end", f"{parts[0]}\n")
+                text_widget.insert("end", f"Точность: {parts[1]}%\n")
+                text_widget.insert("end", f"WPM: {parts[2]}\n")
                 text_widget.insert("end", f"{'-'*30}\n")
 
         text_widget.configure(state='disabled')
@@ -880,8 +878,22 @@ class TypingGUI:
 
         # Обработка завершения ВСЕГО УРОКА
         if result.get("done"):
+            # Сохраняем прогресс пользователя
+            if self.username:
+                accuracy = result.get("accuracy", 0)
+                wpm = result.get("wpm", 0)
+                self.user_manager.update_progress(
+                    self.username,
+                    self.session.track,
+                    self.session.level_key,
+                    self.session.language,
+                    accuracy,
+                    wpm
+                )
+
             save_session_to_csv(self.session)
             next_level = get_next_level(self.session.track, self.session.level_key)
+
             if next_level:
                 # Переход на следующий уровень
                 self.session.level_key = next_level
@@ -1210,3 +1222,15 @@ class TypingGUI:
 
         # Опционально: нарисовать маркер позиции курсора (можно убрать)
         # self.canvas.create_line(CURSOR_FIXED_X, 5, CURSOR_FIXED_X, 40, fill='red', width=1)
+
+    def restart_current_lesson(self):
+        """Перезапускает текущий урок с начала"""
+        # Сбрасываем индекс в сессии
+        self.session.index = 0
+        # Сбрасываем GUI счётчики
+        self.current_index = 0
+        self.user_input = ""
+        self.is_training_ended = False
+        # Обновляем отображение
+        self.update_prompt()
+        self.show_minecraft_message("Урок перезапущен", "#7CFC00")
