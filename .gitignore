@@ -1,3 +1,24 @@
 venv/
 .idea/
 __pycache__/
+
+# IDE
+.idea/
+.vscode/
+
+# Пользовательские данные
+users/
+*.json
+typing_history.csv
+
+# Резервные копии и мусор
+*.backup
+*.zip
+et*
+test_*.py
+setup_chest.py
+PROJECT.md
+
+# Кэш Python
+__pycache__/
+*.pyc
