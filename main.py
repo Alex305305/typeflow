@@ -116,11 +116,11 @@ class StartScreen:
         )
         start_btn.pack(pady=20)
 
-        tk.Label(
-            self.root,
-            text="После выбора нажмите Enter для отправки слова.\nТочность < 80% - слово повторится.",
-            bg=BG_COLOR, fg="#a0a0a0", font=("Press Start 2P", 10)
-        ).pack(pady=10)
+        # tk.Label(
+        #     self.root,
+        #     text="После выбора нажмите Enter для отправки слова.\nТочность < 80% - слово повторится.",
+        #     bg=BG_COLOR, fg="#a0a0a0", font=("Press Start 2P", 10)
+        # ).pack(pady=10)
 
     def setup_user_selection(self):
         """Создаёт фрейм для выбора пользователя"""

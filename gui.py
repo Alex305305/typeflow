@@ -18,6 +18,7 @@ class TypingGUI:
     def __init__(self, root:tk.Tk, track:str, level_key:str, language:str, username=None):
         self.root = root
         self.user_manager = UserManager()
+        self.username = username
         self.language = language
         self.track = track
         self.level_key = level_key
@@ -39,15 +40,7 @@ class TypingGUI:
         self.root.bind("<Configure>", self.on_resize)
 
         # Фон загрузится после отображения окна
-        self.root.after(300, self.init_background)
-        self.status_label = tk.Label(
-            self.root,
-            text="",
-            font=("Press Start 2P", 10),
-            bg=BG_COLOR,
-            fg="white"
-        )
-        self.status_label.pack(side="bottom", pady=2)
+        self.root.after(50, self.init_background)
 
         self.current_index = 0
         self.user_input = ""
@@ -116,7 +109,8 @@ class TypingGUI:
             ("История", self.show_history),
             ("Настройки", self.show_settings),
             (("Уроки", self.show_lesson_selector)),
-            ("Достижения", self.show_achievements)
+            ("Достижения", self.show_achievements),
+            ("Меню", self.back_to_main_menu)
         ]
 
         for text, command in buttons:
@@ -213,16 +207,6 @@ class TypingGUI:
         """
         self.diamonds_label.place(relx=0.98, rely=0.98, anchor="se")
 
-        # Статус CAPS LOCK
-        self.status_label = tk.Label(
-            self.root,
-            text="",
-            font=("Press Start 2P", 10),
-            bg=BG_COLOR,
-            fg="white"
-        )
-        self.status_label.pack(side="bottom", pady=2)
-
         # Первое слово
         self.update_prompt()
 
@@ -285,40 +269,40 @@ class TypingGUI:
             anchor='w'
         ).pack(fill="x", padx=20, pady=10)
 
-        # 2. Тема (Minecraft / Terminal)
-        theme_var = tk.StringVar(value="minecraft" if not self.devops_mode else "terminal")
-        tk.Label(
-            content,
-            text="Тема оформления:",
-            bg='#4C4C4C',
-            fg='white',
-            font=("Press Start 2P", 10)
-        ).pack(padx=20, pady=(10, 0), anchor='w')
-
-        theme_frame = tk.Frame(content, bg='#4C4C4C')
-        theme_frame.pack(padx=20, pady=5, fill="x")
-
-        tk.Radiobutton(
-            theme_frame,
-            text="Minecraft",
-            variable=theme_var,
-            value="minecraft",
-            bg='#4C4C4C',
-            fg='white',
-            selectcolor='#2D2D2D',
-            font=("Press Start 2P", 8)
-        ).pack(side="left", padx=5)
-
-        tk.Radiobutton(
-            theme_frame,
-            text="Terminal",
-            variable=theme_var,
-            value="terminal",
-            bg='#4C4C4C',
-            fg='white',
-            selectcolor='#2D2D2D',
-            font=("Press Start 2P", 8)
-        ).pack(side="left", padx=5)
+        # # 2. Тема (Minecraft / Terminal)
+        # theme_var = tk.StringVar(value="minecraft" if not self.devops_mode else "terminal")
+        # tk.Label(
+        #     content,
+        #     text="Тема оформления:",
+        #     bg='#4C4C4C',
+        #     fg='white',
+        #     font=("Press Start 2P", 10)
+        # ).pack(padx=20, pady=(10, 0), anchor='w')
+        #
+        # theme_frame = tk.Frame(content, bg='#4C4C4C')
+        # theme_frame.pack(padx=20, pady=5, fill="x")
+        #
+        # tk.Radiobutton(
+        #     theme_frame,
+        #     text="Minecraft",
+        #     variable=theme_var,
+        #     value="minecraft",
+        #     bg='#4C4C4C',
+        #     fg='white',
+        #     selectcolor='#2D2D2D',
+        #     font=("Press Start 2P", 8)
+        # ).pack(side="left", padx=5)
+        #
+        # tk.Radiobutton(
+        #     theme_frame,
+        #     text="Terminal",
+        #     variable=theme_var,
+        #     value="terminal",
+        #     bg='#4C4C4C',
+        #     fg='white',
+        #     selectcolor='#2D2D2D',
+        #     font=("Press Start 2P", 8)
+        # ).pack(side="left", padx=5)
 
         # 3. Кнопка сброса статистики
         tk.Button(
@@ -465,19 +449,6 @@ class TypingGUI:
         self.canvas.configure(bg=BG_COLOR) # используем цвет фона
         self.stats_label.configure(bg=BG_COLOR, fg='#a0a0a0')
 
-    def show_minecraft_message(self, text, color):
-        """Временное сообщение в стиле Minecraft (по центру)"""
-        msg = tk.Label(
-            self.root,
-            text=text,
-            font=("Press Start 2P", 14),
-            bg='#2D2D2D',
-            fg=color,
-            relief='raised',
-            bd=3
-        )
-        msg.place(relx=0.5, rely=0.5, anchor="center")
-        self.root.after(2000, msg.destroy)
 
     def show_lesson_selector(self):
         """Открывает окно выбора урока в стиле Minecraft"""
@@ -774,6 +745,7 @@ class TypingGUI:
 
         # Обновляем текущее слово
         self.current_word = target
+        self.adjust_canvas_width()
 
         # НЕ СБРАСЫВАЕМ current_index и user_input!
         # Они должны сохранять своё значение для текущего слова
@@ -784,13 +756,6 @@ class TypingGUI:
 
         # Обновляем отображение
         self.update_display()
-
-        # CAPS LOCK
-        caps_on = self.check_caps_lock()
-        if caps_on:
-            self.status_label.config(text="⚠️ CAPS LOCK ВКЛ", fg="red", bg="yellow")
-        else:
-            self.status_label.config(text="")
 
             
     def show_final_report(self):
@@ -813,15 +778,11 @@ class TypingGUI:
         # Обновляем подсветку
         self.update_display()
 
-        # CAPS LOCK
-        caps_on = self.check_caps_lock()
-        if caps_on:
-            self.status_label.config(text="⚠️ CAPS LOCK ВКЛ", fg="red", bg="yellow")
-        else:
-            self.status_label.config(text="")
-
 
     def on_key_press(self, event):
+        if self.check_caps_lock():
+            self.show_minecraft_message("⚠️ CAPS LOCK ВКЛ", "#FF4444")
+
         if self.is_training_ended:
             return "break"
 
@@ -939,21 +900,21 @@ class TypingGUI:
 
         # Алмазы и звуки
         if accuracy >= 90.0:
-            praise = "🔥 Алмаз добыт! Идеально!"
+            praise = "Алмаз добыт! Идеально!"
             self.diamonds += 1
             self.diamonds_label.config(text=f"Алмазов: {self.diamonds}")
             self.play_sound("победа")
         elif accuracy >= 80.0:
-            praise = "🟩 Хорошо. Можно быстрее!"
+            praise = "Хорошо. Можно быстрее!"
             self.play_sound("закрытие_программы")
         else:
-            praise = "🟥 Повторение — мать учения!"
+            praise = "Повторение — мать учения!"
             self.play_sound("ошибка_при_наборе")
 
         self.stats_var.set(f"Точность: {accuracy:.1f}% | {praise}")
 
         # Сброс ввода и переход к следующему слову
-        self.root.after(300, self.update_prompt)
+        self.root.after(100, self.update_prompt)
         # Сброс позиции для нового упражнения
         self.canvas.xview_moveto(0)
         self.user_input = ""
@@ -1041,12 +1002,6 @@ class TypingGUI:
             print(f"[ФОН] Ошибка: {e}")
             self.bg_canvas.configure(bg=BG_COLOR)
 
-    def check_caps_lock(self):
-        try:
-            out = subprocess.check_output(['xset', 'q']).decode()
-            return 'Caps Lock:   on' in out
-        except:
-            return False
 
     def load_background(self):
         """Загружает фон ПОСЛЕ того, как окно отобразилось."""
@@ -1061,8 +1016,6 @@ class TypingGUI:
                 img = Image.open(bg_path)
                 w, h = self.root.winfo_width(), self.root.winfo_height()
                 if w <= 1 or h <= 1:
-                    # Если размеры ещё не готовы — подождём
-                    # self.root.after(100, self.load_background)  #Удали всё, что связано с on_window_resize, draw_background_resized, after(100, ...) — они только мешают.
                     return
                 img = img.resize((w, h), Image.NEAREST)
                 # КРИТИЧНО: сохраняем ссылку, чтобы GC не удалил
@@ -1234,3 +1187,82 @@ class TypingGUI:
         # Обновляем отображение
         self.update_prompt()
         self.show_minecraft_message("Урок перезапущен", "#7CFC00")
+
+    def show_caps_warning(self):
+        msg = tk.Label(
+            self.root,
+            text="⚠️ CAPS LOCK ВКЛ",
+            font=("Press Start 2P", 12, "bold"),
+            bg='#2D2D2D',
+            fg="#FF4444",
+            relief="raised",
+            bd=3,
+            padx=10,
+            pady=5
+        )
+        msg.place(relx=0.5, rely=0.5, anchor="center")
+        self.root.after(2000, msg.destroy)
+
+    def back_to_main_menu(self):
+        self.root.destroy()
+        import main
+        root = tk.Tk()
+        main.StartScreen(root)
+        root.mainloop()
+
+    def check_caps_lock(self):
+        """Проверяет состояние Caps Lock в Linux через xset"""
+        try:
+            import subprocess
+            output = subprocess.check_output(['xset', 'q'], stderr=subprocess.DEVNULL).decode()
+            return 'Caps Lock: on' in output
+        except Exception:
+            return False
+
+    def show_minecraft_message(self, text, color):
+        """Показывает временное сообщение в центре экрана (на 2 секунды)"""
+        msg = tk.Label(
+            self.root,
+            text=text,
+            font=("Press Start 2P", 12, "bold"),
+            bg='#2D2D2D',
+            fg=color,
+            relief="raised",
+            bd=3,
+            padx=10,
+            pady=5
+        )
+        msg.place(relx=0.5, rely=0.5, anchor="center")
+        self.root.after(2000, msg.destroy)
+
+    def adjust_canvas_width(self):
+        if not self.current_word:
+            return
+        width = len(self.current_word) * 26 + 80  # 26 пикселей на символ + отступы
+        self.canvas.config(width=width, bg=BG_COLOR)
+        self.canvas.update_idletasks()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
