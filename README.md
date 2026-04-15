@@ -22,6 +22,15 @@ https://asciinema.org/a/J9DoPrYmMKnX2qYQ
 - Алмазы и достижения
 - Выбор языка (RU/EN)
 
+## Установка из .deb-пакета (Ubuntu)
+
+1. Скачайте файл `typeflow_1.2_all.deb` из раздела [Releases](https://github.com/Alex305305/typeflow/releases).
+2. Установите пакет:
+   ```bash
+   sudo dpkg -i typeflow_1.2_all.deb
+   sudo apt --fix-broken install
+
+
 ## Установка и запуск
 ```bash
 git clone https://github.com/Alex305305/typeflow.git
